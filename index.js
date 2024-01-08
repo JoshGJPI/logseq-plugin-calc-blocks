@@ -8,11 +8,13 @@ function main () {
         //pause before running to allow DB to update with current changes
         await new Promise(resolve => setTimeout(resolve, 250));
 
-        //get the current block
-        const { uuid } = await logseq.Editor.getCurrentBlock()
+        console.log("begin cBlock slash");
 
+        //get the current block
+        let currentBlock = await logseq.Editor.getCurrentBlock()
+        console.log(currentBlock);
         //calculate block contents
-        let calculatedBlock = await calcBlock(uuid);
+        let calculatedBlock = await calcBlock(currentBlock.uuid);
 
         //update current block
         await updateBlockDisplay(calculatedBlock);

@@ -85,7 +85,7 @@ console.log("begin parseBlockInfo");
     let namesVariable = firstLine.includes(":=");
     let variableName = "";
     let rawVariableName = ""
-    let rawVariableValue = "";
+    let rawVariableValue = firstLine;
     let toBeCalced = false;
 
     //if it contains children, fill the array with their uuids
@@ -181,9 +181,13 @@ export function calculateValue(block) {
         calcBlock.unit = resultUnit;
     }
 
+    //only add := if a variable name is defined
+    let calcedVariableName = "";
+    if (calcBlock.rawVariableName.length > 0) calcedVariableName = `${calcBlock.rawVariableName} := `;
+
     calcBlock.value = resultNum;
     calcBlock.valueStr = resultStr;
-    calcBlock.calculatedContent = `${calcBlock.rawVariableName} := ${content} = ${resultStr}`
+    calcBlock.calculatedContent = `${calcedVariableName}${content} = ${resultStr}`
 
     return calcBlock;
 }
@@ -251,10 +255,106 @@ treeObject.hasBeenCalced = true;
 childTreeObject.calculatedBlocks.push(treeObject);
 */
 
-logseq.calcNotes = {};
-logseq.calcNotes.findVariables = findVariables;
-logseq.calcNotes.parseExpressionValues = parseExpressionValues;
-logseq.calcNotes.getCalcedVariableValue = getCalcedVariableValue;
-logseq.calcNotes.parseBlockInfo = parseBlockInfo;
-logseq.calcNotes.calculateValue = calculateValue;
-logseq.calcNotes.calcBlock = calcBlock;
+//standardized way of adding blocks to child tree object
+function addToChildTreeObject(block) {
+    console.log("begin addToChildTreeObject");
+
+    let uuid = block.uuid;
+    let variableName = block.variableName;
+    let infoObject = {
+    uuid: uuid,
+    variableName: variableName
+    };
+
+    console.log(infoObject);
+    console.log(childTreeObject);
+    childTreeObject[uuid] = block;
+    childTreeObject.totalBlocks.push(block);
+    childTreeObject.variables[variableName] = infoObject;
+    }
+
+    //get variable value from variable name
+    function getCalcedVariableValue(name) {
+
+    let variableUUID = childTreeObject.variables[name].uuid;
+    let variableInfo = childTreeObject[variableUUID];
+
+    //if the variable hasn't been calced return
+    if (!variableInfo.hasBeenCalced) return false;
+
+    return variableInfo;
+}
+
+//take UUID of a given block and return child/parent tree object
+export async function createChildTreeObject(uuid) {
+    console.log("begin CreateChildTreeObject");
+    //get the block of the given uuid
+    let currentBlock = await logseq.api.get_block(uuid);
+    let children = getChildBlocks(uuid);
+
+    //return false if block contains no children
+    if (!children) {
+        console.log("No children");
+        return false;
+    }
+
+    //reset childTreeObject when function is run
+    childTreeObject = {};
+    childTreeObject.variables = {};
+    childTreeObject.calculatedBlocks = [];
+    chidlTreeObject.variableBlocks = [];
+    childTreeObject.totalBlocks = [];
+
+    let currentParsedBlock = parseBlockInfo(currentBlock);
+
+    if (currentParsedBlock.toBeCalced) addToChildTreeObject(currentParsedBlock);
+
+    //use Do-while loop to dig through all child blocks and add to childTreeObject
+    let runningArray = children;
+    do {
+        console.log("begin do-while Loop");
+        //clone and reset runningArray for future pushes into it
+        let parsingArray = JSON.parse(JSON.stringify(runningArray));
+        runningArray = [];
+
+        //loop through array and parse each item
+        parsingArray.forEach(item => {
+            let parsedItem = parseBlockInfo(item);
+            let {toBeCalced, children} = parsedItem;
+            //if it's to be calced add it to the childTreeObject
+            if (toBeCalced) addToChildTreeObject(parsedItem);
+
+            //if it has children, push them to the runningArray for the next loop
+            if (children.length > 0) {
+                children.forEach(item => {
+                let childBlock = logseq.api.get_block(item);
+                runningArray.push(childBlock);
+                })
+            }
+        })
+    }
+    while (runningArray.length > 0);
+
+    return childTreeObject;
+}
+
+function calculateTree(object) {
+    console.log("begin CalculateTree");
+    for (key in object) {
+        if (key.length < 20) continue;
+        
+        //setup all block values without variables first
+        let block = object[key];
+        if (!block.containsVariables) {
+        calculateValue(block.rawVariableValue, block.uuid)
+        }
+    }
+
+    let i = 0;
+    do {
+        
+
+        i++;
+    }
+    while (childTreeObject.totalBlocks.length > childTreeObject.calculatedBlocks.length || i < 100)
+}
