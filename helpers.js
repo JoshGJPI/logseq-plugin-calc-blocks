@@ -1,22 +1,24 @@
+import { childTreeObject } from "./index.js";
+
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
 function findVariables(text) {
     console.log("begin findVariables")
-    //find raw typed variables of form ${variable name}
-    let rawRegex = /\$\{([^}]+)\}/g;
-    let rawMatches = [...text.matchAll(rawRegex)];
+    //find named variables of form ${variable name}
+    let nameRegex = /\$\{([^}]+)\}/g;
+    let nameMatches = [...text.matchAll(nameRegex)];
 
-    //find calculated variables of form [variable value](((block uuid)))
-    let calcedRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
-    let calcedMatches = [...text.matchAll(calcedRegex)];
+    //find uuid variables of form [variable value](((block uuid)))
+    let uuidRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
+    let uuidMatches = [...text.matchAll(uuidRegex)];
 
     //return empty array if no variables
-    if (rawMatches.length === 0 && calcedMatches.length === 0) {
+    if (nameMatches.length === 0 && uuidMatches.length === 0) {
         console.log("no variables");
         return [];
     }
 
-    //parse and return array of found raw variables
-    let rawVariables = rawMatches.map(match => {
+    //parse and return array of found named variables
+    let namedVariables = nameMatches.map(match => {
         return {
         index: match.index,
         rawValue: match[0],
@@ -25,8 +27,8 @@ function findVariables(text) {
         };
     });
 
-    //parse and return array of found calced variables
-    let calcedVariables = calcedMatches.map(match => {
+    //parse and return array of found uuid variables
+    let uuidVariables = uuidMatches.map(match => {
         return {
         index: match.index,
         rawValue: match[0],
@@ -35,10 +37,35 @@ function findVariables(text) {
         };
     })
 
-    let compiledArray = [...rawVariables, ...calcedVariables];
+    let compiledArray = [...namedVariables, ...uuidVariables];
     console.log(compiledArray);
     return compiledArray;
 }
+
+//take the UUID of a given block and return an array of children blocks
+export async function getChildBlocks(uuid) {
+    console.log("begin getChildBlocks");
+    //get the block of the given uuid
+    let block = await logseq.Editor.get_block(uuid);
+    console.log(block);
+    //check to see if it has children
+    let hasChildren = block.children.length > 0;
+    //if no children, return false
+    if (!hasChildren) {
+        console.log("no child blocks for:", uuid);
+        return false
+    }
+    //if it has children, put them into an array and return that array
+    let childBlockArray = [];
+    childBlockArray = await Promise.all(block.children.map(async item => {
+        console.log(item);
+        let childUUID = item[1];
+        let childBlock = await logseq.Editor.get_block(childUUID);
+        console.log(childBlock);
+        return childBlock;
+    }));
+    return childBlockArray;
+} 
 
 //break expression string into a number and unit
 function parseExpressionValues(text) {
@@ -192,6 +219,26 @@ export function calculateValue(block) {
     return calcBlock;
 }
 
+export async function calcBlock(uuid) {
+    console.log("begin calcBlock");
+    //get the current block
+    let block = await logseq.Editor.get_block(uuid);
+    //parse it and prep info for calculation
+    let parsedBlock = parseBlockInfo(block);
+
+    //if the block doesn't contain calcable content or is undefined, return false
+    let calculateBlock = parsedBlock.toBeCalced;
+    if (!parsedBlock || !calculateBlock) {
+        console.log("no items to calculate");
+        return false;
+    }
+    //calculate block expression results and prep text display
+    let calculatedBlock = calculateValue(parsedBlock);
+    console.log(calculatedBlock);
+
+    return calculatedBlock;
+}
+
 export async function updateBlockDisplay(block) {
     console.log("begin updateBlockDisplay");
     let {rawContent, calculatedContent} = block;
@@ -213,25 +260,6 @@ export async function updateBlockDisplay(block) {
     return true;
 }
 
-export async function calcBlock(uuid) {
-    console.log("begin calcBlock");
-    //get the current block
-    let block = await logseq.Editor.get_block(uuid);
-    //parse it and prep info for calculation
-    let parsedBlock = parseBlockInfo(block);
-
-    //if the block doesn't contain calcable content or is undefined, return false
-    let calculateBlock = parsedBlock.toBeCalced;
-    if (!parsedBlock || !calculateBlock) {
-        console.log("no items to calculate");
-        return false;
-    }
-    //calculate block expression results and prep text display
-    let calculatedBlock = calculateValue(parsedBlock);
-    console.log(calculatedBlock);
-
-    return calculatedBlock;
-}
 //THESE ARE LEFTOVERS USED TO UPDATE GLOBAL CALC OBJECT
 /*//show results at end of string if calculation is required
 if (containsOperator) {
@@ -268,29 +296,19 @@ function addToChildTreeObject(block) {
 
     console.log(infoObject);
     console.log(childTreeObject);
+    //add block info to global object
     childTreeObject[uuid] = block;
     childTreeObject.totalBlocks.push(block);
     childTreeObject.variables[variableName] = infoObject;
-    }
-
-    //get variable value from variable name
-    function getCalcedVariableValue(name) {
-
-    let variableUUID = childTreeObject.variables[name].uuid;
-    let variableInfo = childTreeObject[variableUUID];
-
-    //if the variable hasn't been calced return
-    if (!variableInfo.hasBeenCalced) return false;
-
-    return variableInfo;
 }
 
 //take UUID of a given block and return child/parent tree object
 export async function createChildTreeObject(uuid) {
     console.log("begin CreateChildTreeObject");
     //get the block of the given uuid
-    let currentBlock = await logseq.api.get_block(uuid);
-    let children = getChildBlocks(uuid);
+    let currentBlock = await logseq.Editor.get_block(uuid);
+    let children = await getChildBlocks(uuid);
+    console.log(children);
 
     //return false if block contains no children
     if (!children) {
@@ -298,15 +316,10 @@ export async function createChildTreeObject(uuid) {
         return false;
     }
 
-    //reset childTreeObject when function is run
-    childTreeObject = {};
-    childTreeObject.variables = {};
-    childTreeObject.calculatedBlocks = [];
-    chidlTreeObject.variableBlocks = [];
-    childTreeObject.totalBlocks = [];
-
+    //parse through current block
     let currentParsedBlock = parseBlockInfo(currentBlock);
 
+    //if current block has information, add it to global object
     if (currentParsedBlock.toBeCalced) addToChildTreeObject(currentParsedBlock);
 
     //use Do-while loop to dig through all child blocks and add to childTreeObject
@@ -316,20 +329,22 @@ export async function createChildTreeObject(uuid) {
         //clone and reset runningArray for future pushes into it
         let parsingArray = JSON.parse(JSON.stringify(runningArray));
         runningArray = [];
-
+        console.log(parsingArray);
         //loop through array and parse each item
         parsingArray.forEach(item => {
             let parsedItem = parseBlockInfo(item);
+            console.log(parsedItem);
             let {toBeCalced, children} = parsedItem;
             //if it's to be calced add it to the childTreeObject
             if (toBeCalced) addToChildTreeObject(parsedItem);
 
             //if it has children, push them to the runningArray for the next loop
             if (children.length > 0) {
-                children.forEach(item => {
-                let childBlock = logseq.api.get_block(item);
-                runningArray.push(childBlock);
-                })
+                children.forEach(async item => {
+                    console.log(item);
+                    let childBlock = await logseq.Editor.get_block(item);
+                    runningArray.push(childBlock);
+                });
             }
         })
     }
