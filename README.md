@@ -3,7 +3,10 @@
 - All mathematical operators and values must be space separated: ie.
   - *before* sample name := ( 25psf + 15psf ) / 2
   - *after* sample name := ( 25psf + 15psf ) / 2 = 20psf
-
+- Units are currently ignored. The last unit displayed in the equation will be copied onto the result
+  - *example* sample := 20psf * 10ft = 200ft
+  - *current workaround* sample := 20psf * 10ft + 0plf = 200plf
+  
 ### API
 
 [![npm version](https://badge.fury.io/js/%40logseq%2Flibs.svg)](https://badge.fury.io/js/%40logseq%2Flibs)
