@@ -33,7 +33,7 @@ export function calculateValue(block) {
 	let parsedArray = contentArray.map((item) => {
 		//check if it's an operator
 		let operatorRegex = /[+\-*/^()]/;
-		let isOperator = operatorRegex.test(item);
+		let isOperator = ( operatorRegex.test(item) && item.length === 1 );
 
 		if (isOperator) {
 			//convert to ^ to JS native power operator
@@ -52,8 +52,8 @@ export function calculateValue(block) {
 	//rejoin array with spaces
 	let evalString = parsedArray.join(' ');
 
-	//calculate block value and prepare text display value
-	let resultNum = eval(evalString);
+	//calculate block value and prepare text display value - round result to 3 decimal places
+	let resultNum = Math.round(eval(evalString)*1000)/1000;
 	let resultStr = `${resultNum}`;
 
 	//if the values had units, assume the last one is the resultant unit (for now)
@@ -155,7 +155,11 @@ function addToChildTreeObject(block) {
 	//add block info to global object
 	childTreeObject[uuid] = block;
 	childTreeObject.totalBlocks.push(block);
-	childTreeObject.variables[variableName] = infoObject;
+	//if the block contains variables, populate them in the global object
+	if ( block.variableName !== "") {
+		childTreeObject.variables[variableName] = infoObject;
+		childTreeObject.variableBlocks.push(block);
+	}
 }
 
 //take UUID of a given block and return child/parent tree object
@@ -187,9 +191,9 @@ export async function createChildTreeObject(uuid) {
 		runningArray = [];
 		console.log(parsingArray);
 		//loop through array and parse each item
-		parsingArray.forEach((item) => {
+		for (let i = 0; i < parsingArray.length; i++) {
 			console.log('parsingArray.forEach');
-			let parsedItem = parseBlockInfo(item);
+			let parsedItem = parseBlockInfo(parsingArray[i]);
 			// console.log(parsedItem);
 			let { toBeCalced, children } = parsedItem;
 			//if it's to be calced add it to the childTreeObject
@@ -197,21 +201,23 @@ export async function createChildTreeObject(uuid) {
 			console.log(childTreeObject);
 			//if it has children, push them to the runningArray for the next loop
 			if (children.length > 0) {
-				children.forEach(async (item) => {
+				for (let j = 0; j < children.length; j++) {
 					// console.log(item);
-					let childBlock = await logseq.Editor.get_block(item);
+					let childBlock = await logseq.Editor.get_block(children[j]);
 					runningArray.push(childBlock);
 					console.log(runningArray);
-				});
+				};
 			}
-		});
+		};
 	} while (runningArray.length > 0);
 
+	console.log("end do-while Loop");
 	return childTreeObject;
 }
 
 function calculateTree(object) {
 	console.log('begin CalculateTree');
+
 	for (key in object) {
 		if (key.length < 20) continue;
 

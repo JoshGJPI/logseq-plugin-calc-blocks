@@ -79,7 +79,7 @@ export function parseExpressionValues(text) {
 		value: num,
 		unit: letters[0],
 	};
-
+	console.log(object);
 	return object;
 }
 
