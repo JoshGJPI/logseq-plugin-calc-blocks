@@ -20,7 +20,7 @@ export function findVariables(text) {
 		return {
 			index: match.index,
 			rawValue: match[0],
-			value: match[1],
+			name: match[1],
 			type: 'raw',
 		};
 	});
@@ -30,13 +30,13 @@ export function findVariables(text) {
 		return {
 			index: match.index,
 			rawValue: match[0],
-			value: match[1],
+			name: match[1],
 			type: 'calced',
 		};
 	});
 
+	//compile and return results in an array
 	let compiledArray = [...namedVariables, ...uuidVariables];
-	console.log(compiledArray);
 	return compiledArray;
 }
 
@@ -79,7 +79,7 @@ export function parseExpressionValues(text) {
 		value: num,
 		unit: letters[0],
 	};
-	console.log(object);
+
 	return object;
 }
 
@@ -122,12 +122,20 @@ export function parseBlockInfo(block) {
 	let operatorRegex = /\s[+\-*/^()]\s/;
 	let containsOperator = operatorRegex.test(rawVariableValue);
 
-	//if it conains an operator or a variable name, add to calc tree
-	if (containsOperator || namesVariable) toBeCalced = true;
+	//check if string contains words without numbers
+	let wordRegex = /\s[a-zA-z]+.*\s/;
+	let containsWord = wordRegex.test(rawVariableValue);
 
+	
 	//check to see if other variables are included in expression
 	let variables = findVariables(rawVariableValue);
 	let containsVariables = variables.length !== 0;
+
+	//if it doesn't contain space separated letter characters or it does contain variables, continue check
+	if (!containsWord || containsVariables) {
+		//if it contains an operator or variable name, add to calc tree
+		if (containsOperator || namesVariable) toBeCalced = true;
+	}
 
 	let parsedBlock = {
 		uuid: block.uuid,
