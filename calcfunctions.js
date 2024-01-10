@@ -17,32 +17,35 @@ function getCalcedVariableValue(name) {
 	return variableInfo;
 }
 
-//calculate value of given block content and return updated block
-export function calculateValue(block) {
-	console.log('begin calculateValue');
+//takes a string of values, calculates result, and returns it as a number
+export function calculateStringValue(text) {
+	console.log("begin calculateStringValue");
 
-	let calcBlock = block;
-	//only get the content to be calculated (before the = sign)
-	let content = calcBlock.rawCalcContent.split('=')[0].trim();
-	//split expressions by spaces " "
-	let contentArray = content.split(' ');
+	//remove training spaces, then split expressions by internal spaces " "
+	let contentArray = text.trim().split(' ');
 	let unitsArray = [];
-	let containsOperator = false;
 
 	//remove units and convert into array of numbers for calculation
 	let parsedArray = contentArray.map((item) => {
-		//check if it's an operator
+		//check to see if input is a number
+		let isNumber = typeof item === "number";
 		let operatorRegex = /[+\-*/^()]/;
-		let isOperator = ( operatorRegex.test(item) && item.length === 1 );
 
-		if (isOperator) {
-			//convert to ^ to JS native power operator
-			if (item === '^') item = '**';
-			containsOperator = true;
-			return item;
+		if (!isNumber) {
+			//check if it's an operator
+			let isOperator = (operatorRegex.test(item) && item.length === 1);
+	
+			if (isOperator) {
+				//convert to ^ to JS native power operator
+				if (item === '^') item = '**';
+				return item;
+			}
 		}
-		//break 30psf into 30 & "psf"
-		let parsedItem = parseExpressionValues(item);
+
+		//if item is a number, convert to string for parseExpressionValues()
+		let stringItem = isNumber ? item.toString() : item;
+		//break nonoperator 30psf into 30 & "psf"
+		let parsedItem = parseExpressionValues(stringItem);
 		//add units to unit array
 		if (parsedItem.unit) unitsArray.push(parsedItem.unit);
 
@@ -51,9 +54,29 @@ export function calculateValue(block) {
 
 	//rejoin array with spaces
 	let evalString = parsedArray.join(' ');
-
+	console.log(evalString);
 	//calculate block value and prepare text display value - round result to 3 decimal places
-	let resultNum = Math.round(eval(evalString)*1000)/1000;
+	const roundAmount = 1000;
+	let resultNum = Math.round(eval(evalString)*roundAmount)/roundAmount;
+
+	let calcStringObject = {
+		resultNum: resultNum,
+		unitsArray: unitsArray
+	}
+	
+	return calcStringObject;
+}
+
+//calculate value of given block content and return updated block
+export function calculateBlockValue(block) {
+	console.log('begin calculateBlockValue');
+
+	let calcBlock = block;
+
+	//only get the content to be calculated (before the = sign)
+	let content = calcBlock.rawCalcContent.split('=')[0].trim();
+	//calculate the value of the block
+	let {resultNum, unitsArray} = calculateStringValue(content);
 	let resultStr = `${resultNum}`;
 
 	//if the values had units, assume the last one is the resultant unit (for now)
@@ -68,6 +91,8 @@ export function calculateValue(block) {
 	if (calcBlock.rawVariableName.length > 0)
 		calcedVariableName = `${calcBlock.rawVariableName} := `;
 
+	//update block info after calculation
+	calcBlock.hasBeenCalced = true;
 	calcBlock.value = resultNum;
 	calcBlock.valueStr = resultStr;
 	calcBlock.calculatedContent = `${calcedVariableName}${content} = ${resultStr}`;
@@ -75,6 +100,7 @@ export function calculateValue(block) {
 	return calcBlock;
 }
 
+//calculate block without variables
 export async function calcBlock(uuid) {
 	console.log('begin calcBlock');
 	//get the current block
@@ -89,12 +115,112 @@ export async function calcBlock(uuid) {
 		return false;
 	}
 	//calculate block expression results and prep text display
-	let calculatedBlock = calculateValue(parsedBlock);
+	let calculatedBlock = calculateBlockValue(parsedBlock);
 	console.log(calculatedBlock);
 
 	return calculatedBlock;
 }
 
+//calculate a block containing variable(s)
+export async function calcVariableBlock(uuid) {
+	console.log("begin calcVariableBlock");
+	let calcBlock = childTreeObject[uuid];
+	let {rawCalcContent} = calcBlock;
+
+	//find the variables in the block content
+	let variables = findVariables(rawCalcContent);
+
+	console.log(variables);
+	let allVariablesCalced = true;
+	//see if all variables have been calced and parse them for block calculation
+	let calculatedVariables = variables.map(item => {
+		console.log(item);
+		//get variable info from childTreeObject
+		let variableName = item.name;
+		let variableObject = childTreeObject.variables[variableName];
+		console.log(variableObject);
+		let variableUUID = variableObject.uuid;
+		let {hasBeenCalced, unit, value, valueStr} = childTreeObject[variableUUID];
+
+		console.log(childTreeObject[variableUUID]);
+		//check if the variable has been calculated
+		if (!hasBeenCalced) {
+			console.log(`${variableName} hasn't been calced`);
+			allVariablesCalced = false;
+			return;
+		}
+
+		//update variable with calced info
+		let referenceText = `[${valueStr}](((${variableUUID})))`;
+		let calcedObject = {
+			...item,
+			value: value,
+			unit: unit, 
+			valueStr: valueStr,
+			uuid: variableUUID,
+			referenceText: referenceText
+		}
+
+		return calcedObject;
+	})
+
+	//if one or more variables haven't been calculated, stop calc
+	if (!allVariablesCalced) {
+		console.log(calculatedVariables);
+		console.log("not all variables calced");
+		return false;
+	}
+	console.log(calculatedVariables);
+	
+	//remove any reexisting results in calc string
+	let parsedCalcContent = rawCalcContent.split("=")[0];
+	//setup running eval string to have variables replaced
+	let runningEvalString = parsedCalcContent;
+
+	//replace variable info with number values for calculation
+	for (let i = 0; i < calculatedVariables.length; i++) {
+		//get rawtext and calculated value from item
+		let {rawValue, valueStr, referenceText} = calculatedVariables[i];
+		
+		//replace raw variable text with valculated value
+		let modifiedString = runningEvalString.replace(rawValue, valueStr);
+		//send updates to runningEvalString
+		runningEvalString = modifiedString;
+
+		//update reference text for global variable
+		calcBlock.referenceText = referenceText;
+	}
+
+	//use parsed string for eval calculation
+	console.log(runningEvalString);
+	let {resultNum, unitsArray} = calculateStringValue(runningEvalString);
+	let resultStr = `${resultNum}`;
+	
+	console.log(parsedCalcContent)
+	console.log(`${calcBlock.variableName} has been calculated`);
+
+	//if the values had units, assume the last one is the resultant unit (for now)
+	if (unitsArray.length > 0) {
+		let resultUnit = unitsArray[unitsArray.length - 1];
+		resultStr = `${resultStr}${resultUnit}`;
+		calcBlock.unit = resultUnit;
+	}
+
+	//only add := if a variable name is defined
+	let calcedVariableName = '';
+	if (calcBlock.rawVariableName.length > 0)
+		calcedVariableName = `${calcBlock.rawVariableName} := `;
+/*UPDATE CONTENT TO INCLUDE [value](((variable UUID)))*/
+	//update block info after calculation
+	calcBlock.hasBeenCalced = true;
+	calcBlock.value = resultNum;
+	calcBlock.valueStr = resultStr;
+	calcBlock.calculatedContent = `${calcedVariableName}${content} = ${resultStr}`;
+
+	return calcBlock;
+}
+
+//update a block's display to display calculated value
 export async function updateBlockDisplay(block) {
 	console.log('begin updateBlockDisplay');
 	let { rawContent, calculatedContent } = block;
@@ -141,7 +267,7 @@ childTreeObject.calculatedBlocks.push(treeObject);
 
 //standardized way of adding blocks to child tree object
 function addToChildTreeObject(block) {
-	console.log('begin addToChildTreeObject');
+	console.log(`add ${block.variableName} to childTreeObject`);
 
 	let uuid = block.uuid;
 	let variableName = block.variableName;
@@ -150,14 +276,16 @@ function addToChildTreeObject(block) {
 		variableName: variableName,
 	};
 
-	console.log(infoObject);
-	console.log(childTreeObject);
 	//add block info to global object
 	childTreeObject[uuid] = block;
 	childTreeObject.totalBlocks.push(block);
-	//if the block contains variables, populate them in the global object
-	if ( block.variableName !== "") {
+
+	//if block defines a variable name, populate tree.variables
+	if (variableName.length > 0) {
 		childTreeObject.variables[variableName] = infoObject;
+	}
+	//if the block contains variables, populate them in the global object
+	if (block.containsVariables) {
 		childTreeObject.variableBlocks.push(block);
 	}
 }
@@ -168,7 +296,6 @@ export async function createChildTreeObject(uuid) {
 	//get the block of the given uuid
 	let currentBlock = await logseq.Editor.get_block(uuid);
 	let children = await getChildBlocks(uuid);
-	console.log(children);
 
 	//return false if block contains no children
 	if (!children) {
@@ -192,48 +319,60 @@ export async function createChildTreeObject(uuid) {
 		console.log(parsingArray);
 		//loop through array and parse each item
 		for (let i = 0; i < parsingArray.length; i++) {
-			console.log('parsingArray.forEach');
+			console.log('begin parsingArray loop');
 			let parsedItem = parseBlockInfo(parsingArray[i]);
 			// console.log(parsedItem);
 			let { toBeCalced, children } = parsedItem;
 			//if it's to be calced add it to the childTreeObject
 			if (toBeCalced) addToChildTreeObject(parsedItem);
-			console.log(childTreeObject);
+
 			//if it has children, push them to the runningArray for the next loop
 			if (children.length > 0) {
 				for (let j = 0; j < children.length; j++) {
 					// console.log(item);
 					let childBlock = await logseq.Editor.get_block(children[j]);
 					runningArray.push(childBlock);
-					console.log(runningArray);
 				};
 			}
 		};
+		console.log(runningArray);
 	} while (runningArray.length > 0);
 
 	console.log("end do-while Loop");
 	return childTreeObject;
 }
 
-function calculateTree(object) {
+export async function calculateTree(object) {
 	console.log('begin CalculateTree');
 
-	for (key in object) {
-		if (key.length < 20) continue;
-
+	let treeObject = object;
+	for (let i = 0; i < treeObject.totalBlocks.length; i++) {
 		//setup all block values without variables first
-		let block = object[key];
+		let block = treeObject.totalBlocks[i];
 		if (!block.containsVariables) {
-			calculateValue(block.rawVariableValue, block.uuid);
+			let calculatedBlock = await calcBlock(block.uuid);
+
+			//update tree object values
+			treeObject[block.uuid] = calculatedBlock;
+			treeObject.totalBlocks[i] = calculatedBlock;
+			treeObject.calculatedBlocks.push(calculatedBlock);
 		}
 	}
+	console.log("nonvariable blocks calculated")
+	console.log(childTreeObject);
+	//calculate blocks containing variables
+	console.log("begin calcing variable blocks");
+	for (let i = 0; i < treeObject.variableBlocks.length; i++) {
+		console.log(treeObject.variableBlocks[i]);
+		let blockUUID = treeObject.variableBlocks[i].uuid
+		let calculatedBlock = await calcVariableBlock(blockUUID);
 
-	let i = 0;
-	do {
-		i++;
-	} while (
-		childTreeObject.totalBlocks.length >
-			childTreeObject.calculatedBlocks.length ||
-		i < 100
-	);
+		// //update tree object values
+		treeObject[block.uuid] = calculatedBlock;
+		treeObject.totalBlocks[i] = calculatedBlock;
+		treeObject.calculatedBlocks.push(calculatedBlock);
+	}
+	console.log(childTreeObject);
+
+	return childTreeObject;
 }

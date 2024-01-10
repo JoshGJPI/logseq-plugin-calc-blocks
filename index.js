@@ -1,5 +1,6 @@
 import {
 	calcBlock,
+	calculateTree,
 	createChildTreeObject,
 	updateBlockDisplay,
 } from './calcfunctions.js';
@@ -28,7 +29,7 @@ function main() {
 	console.log('=== begin registering slash commands ===');
 	logseq.Editor.registerSlashCommand('cBlock', async () => {
 		//pause before running to allow DB to update with current changes
-		await new Promise((resolve) => setTimeout(resolve, 250));
+		await new Promise((resolve) => setTimeout(resolve, 400));
 
 		console.log('begin cBlock slash');
 
@@ -45,7 +46,7 @@ function main() {
 
 	logseq.Editor.registerSlashCommand('cTree', async () => {
 		//pause before running to allow DB to update with current changes
-		await new Promise((resolve) => setTimeout(resolve, 250));
+		await new Promise((resolve) => setTimeout(resolve, 400));
 
 		console.log('begin cBlock slash');
 
@@ -57,6 +58,7 @@ function main() {
 		//cycle through all children and create the tree
 		childTreeObject = await createChildTreeObject(currentBlock.uuid);
 		console.log(childTreeObject);
+		let calcedTree = await calculateTree(childTreeObject);
 	});
 }
 
