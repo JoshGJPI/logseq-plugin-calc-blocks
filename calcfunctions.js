@@ -101,10 +101,10 @@ export function calculateBlockValue(block) {
 }
 
 //calculate block without variables
-export async function calcBlock(uuid) {
+export function calcBlock(rawBlock) {
 	console.log('begin calcBlock');
 	//get the current block
-	let block = await logseq.Editor.get_block(uuid);
+	let block = rawBlock;
 	//parse it and prep info for calculation
 	let parsedBlock = parseBlockInfo(block);
 
@@ -122,7 +122,7 @@ export async function calcBlock(uuid) {
 }
 
 //calculate a block containing variable(s)
-export async function calcVariableBlock(uuid) {
+export function calcVariableBlock(uuid) {
 	console.log("begin calcVariableBlock");
 	let calcBlock = childTreeObject[uuid];
 	let {rawCalcContent} = calcBlock;
@@ -180,15 +180,13 @@ export async function calcVariableBlock(uuid) {
 	//replace variable info with number values for calculation
 	for (let i = 0; i < calculatedVariables.length; i++) {
 		//get rawtext and calculated value from item
-		let {rawValue, valueStr, referenceText} = calculatedVariables[i];
+		let {rawValue, valueStr} = calculatedVariables[i];
 		
 		//replace raw variable text with valculated value
 		let modifiedString = runningEvalString.replace(rawValue, valueStr);
 		//send updates to runningEvalString
 		runningEvalString = modifiedString;
 
-		//update reference text for global variable
-		calcBlock.referenceText = referenceText;
 	}
 
 	//use parsed string for eval calculation
@@ -210,13 +208,22 @@ export async function calcVariableBlock(uuid) {
 	let calcedVariableName = '';
 	if (calcBlock.rawVariableName.length > 0)
 		calcedVariableName = `${calcBlock.rawVariableName} := `;
-/*UPDATE CONTENT TO INCLUDE [value](((variable UUID)))*/
+
+	//replace variables with link content
+	let linkContent = parsedCalcContent;
+	calculatedVariables.forEach(item => {
+		let {rawValue, referenceText} = item;
+		linkContent.replace(rawValue, referenceText);
+		console.log(`${rawValue} replaced with ${referenceText}`);
+	})
+	console.log(linkContent);
 	//update block info after calculation
 	calcBlock.hasBeenCalced = true;
 	calcBlock.value = resultNum;
 	calcBlock.valueStr = resultStr;
-	calcBlock.calculatedContent = `${calcedVariableName}${content} = ${resultStr}`;
+	calcBlock.calculatedContent = `${calcedVariableName}${linkContent} = ${resultStr}`;
 
+	console.log(calcBlock);
 	return calcBlock;
 }
 
@@ -344,13 +351,13 @@ export async function createChildTreeObject(uuid) {
 
 export async function calculateTree(object) {
 	console.log('begin CalculateTree');
-
+	console.log(object);
 	let treeObject = object;
 	for (let i = 0; i < treeObject.totalBlocks.length; i++) {
 		//setup all block values without variables first
 		let block = treeObject.totalBlocks[i];
 		if (!block.containsVariables) {
-			let calculatedBlock = await calcBlock(block.uuid);
+			let calculatedBlock = calcBlock(block);
 
 			//update tree object values
 			treeObject[block.uuid] = calculatedBlock;
@@ -362,17 +369,20 @@ export async function calculateTree(object) {
 	console.log(childTreeObject);
 	//calculate blocks containing variables
 	console.log("begin calcing variable blocks");
-	for (let i = 0; i < treeObject.variableBlocks.length; i++) {
-		console.log(treeObject.variableBlocks[i]);
-		let blockUUID = treeObject.variableBlocks[i].uuid
-		let calculatedBlock = await calcVariableBlock(blockUUID);
-
-		// //update tree object values
-		treeObject[block.uuid] = calculatedBlock;
-		treeObject.totalBlocks[i] = calculatedBlock;
-		treeObject.calculatedBlocks.push(calculatedBlock);
-	}
+	do {
+		for (let i = 0; i < treeObject.variableBlocks.length; i++) {
+			console.log(treeObject.variableBlocks[i]);
+			let blockUUID = treeObject.variableBlocks[i].uuid
+			let calculatedBlock = calcVariableBlock(blockUUID);
+			if (!calculatedBlock) continue;
+			//update tree object values
+			treeObject[blockUUID] = calculatedBlock;
+			//THIS MAY OVERRIDE OTHER BLOCKS IF i ISN'T COORDINATED
+			treeObject.totalBlocks[i] = calculatedBlock;
+			treeObject.calculatedBlocks.push(calculatedBlock);
+		}
+	} while (treeObject.totalBlocks.length > treeObject.calculatedBlocks.length)
 	console.log(childTreeObject);
-
+	
 	return childTreeObject;
 }

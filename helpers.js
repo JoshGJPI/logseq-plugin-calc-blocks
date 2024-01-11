@@ -86,12 +86,13 @@ export function parseExpressionValues(text) {
 //take raw content of block and convert into info for calcs
 export function parseBlockInfo(block) {
 	console.log('begin parseBlockInfo');
-
+	console.log(block);
 	//if the block doesn't exist, stop
 	if (block === undefined) return false;
 
+	let rawContent = block.content ? block.content : block.rawContent
 	//get only first line to avoid block parameters
-	let firstLine = block.content.split('\n')[0];
+	let firstLine = rawContent.split('\n')[0];
 	let containsChildren = block.children.length > 0;
 	let childrenArray = [];
 
@@ -125,7 +126,6 @@ export function parseBlockInfo(block) {
 	//check if string contains words that start without numbers
 	let wordRegex = /\\b[^\\d\\W]\\w*\\b/;
 	let containsWord = wordRegex.test(rawVariableValue.trim());
-	console.log(rawVariableValue.match(wordRegex));
 	
 	//check to see if other variables are included in expression
 	let variables = findVariables(rawVariableValue);
@@ -139,7 +139,7 @@ export function parseBlockInfo(block) {
 
 	let parsedBlock = {
 		uuid: block.uuid,
-		rawContent: block.content.split('\n')[0],
+		rawContent: rawContent.split('\n')[0],
 		calculatedContent: '',
 		value: false,
 		valueStr: '',
