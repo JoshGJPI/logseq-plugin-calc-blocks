@@ -122,10 +122,10 @@ export function parseBlockInfo(block) {
 	let operatorRegex = /\s[+\-*/^()]\s/;
 	let containsOperator = operatorRegex.test(rawVariableValue);
 
-	//check if string contains words without numbers
-	let wordRegex = /\s[a-zA-z]+.*\s/;
-	let containsWord = wordRegex.test(rawVariableValue);
-
+	//check if string contains words that start without numbers
+	let wordRegex = /\\b[^\\d\\W]\\w*\\b/;
+	let containsWord = wordRegex.test(rawVariableValue.trim());
+	console.log(rawVariableValue.match(wordRegex));
 	
 	//check to see if other variables are included in expression
 	let variables = findVariables(rawVariableValue);
