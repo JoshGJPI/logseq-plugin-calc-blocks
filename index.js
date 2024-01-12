@@ -58,7 +58,17 @@ function main() {
 		//cycle through all children and create the tree
 		childTreeObject = await createChildTreeObject(currentBlock.uuid);
 		console.log(childTreeObject);
+		//calculate all items of the tree
 		let calcedTree = await calculateTree(childTreeObject);
+		console.log(calcedTree);
+		//update display of all blocks
+		for (let i = 0; i < calcedTree.calculatedBlocks.length; i++) {
+			let block2Update = calcedTree.calculatedBlocks[i];
+			console.log(block2Update);
+			await updateBlockDisplay(block2Update);
+			console.log(block2Update);
+		}
+		console.log("calculate block tree complete!");
 	});
 }
 

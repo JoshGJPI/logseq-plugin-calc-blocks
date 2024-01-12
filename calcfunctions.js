@@ -91,11 +91,17 @@ export function calculateBlockValue(block) {
 	if (calcBlock.rawVariableName.length > 0)
 		calcedVariableName = `${calcBlock.rawVariableName} := `;
 
+	//if there's no operator, don't add = results to the end of calculatedContent
+	let displayedResults = `= ${resultStr}`;
+	let operatorRegex = /[+\-*/^()]/;
+	let containsOperator = operatorRegex.test(content);
+	if (!containsOperator) displayedResults = "";
+
 	//update block info after calculation
 	calcBlock.hasBeenCalced = true;
 	calcBlock.value = resultNum;
 	calcBlock.valueStr = resultStr;
-	calcBlock.calculatedContent = `${calcedVariableName}${content} = ${resultStr}`;
+	calcBlock.calculatedContent = `${calcedVariableName}${content}${displayedResults}`;
 
 	return calcBlock;
 }
@@ -109,7 +115,7 @@ export function calcBlock(rawBlock) {
 	let parsedBlock = parseBlockInfo(block);
 
 	//if the block doesn't contain calcable content or is undefined, return false
-	let calculateBlock = parsedBlock.toBeCalced;
+	let calculateBlock = parsedBlock?.toBeCalced;
 	if (!parsedBlock || !calculateBlock) {
 		console.log('no items to calculate');
 		return false;
@@ -213,15 +219,22 @@ export function calcVariableBlock(uuid) {
 	let linkContent = parsedCalcContent;
 	calculatedVariables.forEach(item => {
 		let {rawValue, referenceText} = item;
-		linkContent.replace(rawValue, referenceText);
+		linkContent = linkContent.replace(rawValue, referenceText);
+		console.log(linkContent);
 		console.log(`${rawValue} replaced with ${referenceText}`);
 	})
-	console.log(linkContent);
+
+	//if there's no operator, don't add = results to the end of calculatedContent
+	let displayedResults = ` = ${resultStr}`;
+	let operatorRegex = /[+\-*/^()]/;
+	let containsOperator = operatorRegex.test(parsedCalcContent);
+	if (!containsOperator) displayedResults = "";
+
 	//update block info after calculation
 	calcBlock.hasBeenCalced = true;
 	calcBlock.value = resultNum;
 	calcBlock.valueStr = resultStr;
-	calcBlock.calculatedContent = `${calcedVariableName}${linkContent} = ${resultStr}`;
+	calcBlock.calculatedContent = `${calcedVariableName}${linkContent}${displayedResults}`;
 
 	console.log(calcBlock);
 	return calcBlock;
