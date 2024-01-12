@@ -124,7 +124,7 @@ export function parseBlockInfo(block) {
 	let containsOperator = operatorRegex.test(rawVariableValue);
 
 	//check if string contains words that start without numbers
-	let wordRegex = /\\b[^\\d\\W]\\w*\\b/;
+	let wordRegex = /\b[a-zA-Z]+\b/;
 	let containsWord = wordRegex.test(rawVariableValue.trim());
 	
 	//check to see if other variables are included in expression
