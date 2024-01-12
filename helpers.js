@@ -1,3 +1,5 @@
+import { childTreeObject } from './index.js';
+
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
 export function findVariables(text) {
 	console.log('begin findVariables');
@@ -27,10 +29,16 @@ export function findVariables(text) {
 
 	//parse and return array of found uuid variables
 	let uuidVariables = uuidMatches.map((match) => {
+		console.log("Found a UUID variable!");
+		//replace [value](((uuid))) format with variable's name from global object
+		let uuid = match[2];
+		let variableName = childTreeObject[uuid].variableName;
+		
+		console.log(match, variableName);
 		return {
 			index: match.index,
 			rawValue: match[0],
-			name: match[1],
+			name: variableName,
 			type: 'calced',
 		};
 	});
