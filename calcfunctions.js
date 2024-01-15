@@ -92,7 +92,7 @@ export function calculateBlockValue(block) {
 		calcedVariableName = `${calcBlock.rawVariableName} := `;
 
 	//if there's no operator, don't add = results to the end of calculatedContent
-	let displayedResults = `= ${resultStr}`;
+	let displayedResults = ` = ${resultStr}`;
 	let operatorRegex = /[+\-*/^()]/;
 	let containsOperator = operatorRegex.test(content);
 	if (!containsOperator) displayedResults = "";
@@ -179,7 +179,7 @@ export function calcVariableBlock(uuid) {
 	console.log(calculatedVariables);
 	
 	//remove any reexisting results in calc string
-	let parsedCalcContent = rawCalcContent.split("=")[0];
+	let parsedCalcContent = rawCalcContent.split("=")[0].trim();
 	//setup running eval string to have variables replaced
 	let runningEvalString = parsedCalcContent;
 
