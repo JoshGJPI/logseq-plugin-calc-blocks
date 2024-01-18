@@ -6,6 +6,9 @@ import {
 	parseBlockInfo,
 } from './helpers.js';
 
+const operatorRegex = /\s[+\-*/^()]\s/;
+const trimmedOperatorRegex = /[+\-*/^()]/;
+
 //get variable value from variable name
 function getCalcedVariableValue(name) {
 	let variableUUID = childTreeObject.variables[name].uuid;
@@ -29,11 +32,10 @@ export function calculateStringValue(text) {
 	let parsedArray = contentArray.map((item) => {
 		//check to see if input is a number
 		let isNumber = typeof item === "number";
-		let operatorRegex = /[+\-*/^()]/;
 
 		if (!isNumber) {
 			//check if it's an operator
-			let isOperator = (operatorRegex.test(item) && item.length === 1);
+			let isOperator = (trimmedOperatorRegex.test(item) && item.length === 1);
 	
 			if (isOperator) {
 				//convert to ^ to JS native power operator
@@ -93,7 +95,6 @@ export function calculateBlockValue(block) {
 
 	//if there's no operator, don't add = results to the end of calculatedContent
 	let displayedResults = ` = ${resultStr}`;
-	let operatorRegex = /[+\-*/^()]/;
 	let containsOperator = operatorRegex.test(content);
 	if (!containsOperator) displayedResults = "";
 
@@ -141,6 +142,7 @@ export function calcVariableBlock(uuid) {
 	//see if all variables have been calced and parse them for block calculation
 	let calculatedVariables = variables.map(item => {
 		console.log(item);
+		console.log(childTreeObject);
 		//get variable info from childTreeObject
 		let variableName = item.name;
 		let variableObject = childTreeObject.variables[variableName];
@@ -226,7 +228,6 @@ export function calcVariableBlock(uuid) {
 
 	//if there's no operator, don't add = results to the end of calculatedContent
 	let displayedResults = ` = ${resultStr}`;
-	let operatorRegex = /[+\-*/^()]/;
 	let containsOperator = operatorRegex.test(parsedCalcContent);
 	if (!containsOperator) displayedResults = "";
 

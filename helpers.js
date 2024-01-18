@@ -32,6 +32,13 @@ export function findVariables(text) {
 		console.log("Found a UUID variable!");
 		//replace [value](((uuid))) format with variable's name from global object
 		let uuid = match[2];
+
+		//give context if error
+		if (!childTreeObject[uuid]?.variableName) {
+			console.log("variable name error");
+			console.log(match);
+			console.log(childTreeObject)
+		}
 		let variableName = childTreeObject[uuid].variableName;
 		
 		console.log(match, variableName);
@@ -131,9 +138,20 @@ export function parseBlockInfo(block) {
 	let operatorRegex = /\s[+\-*/^()]\s/;
 	let containsOperator = operatorRegex.test(rawVariableValue);
 
-	//check if string contains words that start without numbers
-	let wordRegex = /\b[a-zA-Z]+\b/;
-	let containsWord = wordRegex.test(rawVariableValue.trim());
+	//split the string by spaces and see if any items start with a letter as a test for containing a word
+	let wordRegex = /^[a-zA-Z]/;
+	let wordArray = rawVariableValue.split(" ");
+	let containsWord = false;
+
+	//check each item to see if it starts with a letter
+	wordArray.every(item => {
+		let isWord = wordRegex.test(item);
+		if (isWord) {
+			containsWord = true;
+			return false
+		}
+		return true
+	});
 	
 	//check to see if other variables are included in expression
 	let variables = findVariables(rawVariableValue);
@@ -142,7 +160,10 @@ export function parseBlockInfo(block) {
 	//if it doesn't contain space separated letter characters or it does contain variables, continue check
 	if (!containsWord || containsVariables) {
 		//if it contains an operator or variable name, add to calc tree
-		if (containsOperator || namesVariable) toBeCalced = true;
+		if (containsOperator || namesVariable) {
+			console.log("Shalt be calced");
+			toBeCalced = true;
+		}
 	}
 
 	let parsedBlock = {
@@ -163,5 +184,17 @@ export function parseBlockInfo(block) {
 		variables: variables,
 	};
 
+	console.log(parsedBlock);
 	return parsedBlock;
+}
+
+//returns an object with the value of a calculated block
+export function getValue(text) {
+	let resultArray = text.split(":=");
+
+	let result = resultArray[1].trim();
+	if (resultArray.length > 2) {
+		result = resultArray.split("=")[1].trim();
+	}
+	
 }

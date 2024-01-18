@@ -68,6 +68,7 @@ function main() {
 			await updateBlockDisplay(block2Update);
 			console.log(block2Update);
 		}
+		console.log(calcedTree)
 		console.log("calculate block tree complete!");
 	});
 }
