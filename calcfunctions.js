@@ -4,10 +4,9 @@ import {
 	getChildBlocks,
 	parseExpressionValues,
 	parseBlockInfo,
+	operatorRegex,
+	trimmedOperatorRegex
 } from './helpers.js';
-
-const operatorRegex = /\s[+\-*/^()]\s/;
-const trimmedOperatorRegex = /[+\-*/^()]/;
 
 //get variable value from variable name
 function getCalcedVariableValue(name) {

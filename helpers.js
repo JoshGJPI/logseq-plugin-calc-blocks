@@ -1,9 +1,10 @@
 import { childTreeObject } from './index.js';
 
-const nameRegex = /\$\{([^}]+)\}/g;
-const uuidRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
-const operatorRegex = /\s[+\-*/^()]\s/;
-const wordRegex = /^[a-zA-Z]/;
+export const nameRegex = /\$\{([^}]+)\}/g;
+export const uuidRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
+export const operatorRegex = /\s[+\-*/^()<>?:]\s/;
+export const trimmedOperatorRegex = /[+\-*/^()<>?:]/;
+export const wordRegex = /^[a-zA-Z]/;
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
 export function findVariables(text) {
