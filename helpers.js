@@ -5,6 +5,7 @@ export const uuidRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
 export const operatorRegex = /\s[+\-*/^()<>?:]\s/;
 export const trimmedOperatorRegex = /[+\-*/^()<>?:]/;
 export const wordRegex = /^[a-zA-Z]/;
+export const nameVariableRegex = /\${.*?}/g;
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
 export function findVariables(text) {
@@ -121,6 +122,8 @@ export function parseBlockInfo(block) {
 	let rawVariableName = '';
 	let rawVariableValue = firstLine;
 	let toBeCalced = false;
+	let variables = [];
+	let containsVariables = false;
 
 	//if it contains children, fill the array with their uuids
 	if (containsChildren) {
@@ -141,30 +144,38 @@ export function parseBlockInfo(block) {
 	//check if it needs to be calced based on containing an operator with a space on either side
 	let containsOperator = operatorRegex.test(rawVariableValue);
 
+	//remove named variables from the string before checking for words
+	let namelessArray = rawVariableValue.replaceAll(nameVariableRegex, "")
 	//split the string by spaces and see if any items start with a letter as a test for containing a word
-	let wordArray = rawVariableValue.split(" ");
+	let wordArray = namelessArray.split(" ");
 	let containsWord = false;
 
 	//check each item to see if it starts with a letter
 	wordArray.every(item => {
 		let isWord = wordRegex.test(item);
 		if (isWord) {
+			console.log(`${item} is a word!`);
 			containsWord = true;
 			return false
 		}
 		return true
 	});
-	
-	//check to see if other variables are included in expression
-	let variables = findVariables(rawVariableValue);
-	let containsVariables = variables.length !== 0;
 
-	//if it doesn't contain space separated letter characters or it does contain variables AND it contains an operator, calculate variable
-	if ((!containsWord || containsVariables) && containsOperator) {
-		//if it contains an operator or variable name, add to calc tree
-		console.log("Shalt be calced");
-		toBeCalced = true;
+	//If it doesn't contain a word or it does contain ":=", check for variables
+	if (!containsWord && namesVariable) {
+		//check to see if other variables are included in expression
+		variables = findVariables(rawVariableValue);
+		containsVariables = variables.length !== 0;
+
+		//if it contains variables OR it contains an operator, calculate variable
+		if (containsVariables || containsOperator) {
+			//if it contains an operator or variable name, add to calc tree
+			console.log("Shalt be calced");
+			toBeCalced = true;
+		}
 	}
+	//if it doesn't contain a word and does contain an operator, calculate it
+	if (!containsWord, containsOperator) toBeCalced = true;
 	
 	//always calculate blocks with a ":="
 	if (namesVariable) toBeCalced = true;
