@@ -34,6 +34,7 @@
 - Units are currently ignored. The last unit displayed in the equation will be copied onto the result
   - *example:* sample := 20psf * 10ft = 200ft
   - *current workaround:* sample := 20psf * 10ft + 0plf = 200plf
+- Defining variables as Negative numbers isn't currently supported
 - Variable names must be defined before they are referenced - This means a parent block cannot reference a variable in a child block, and a sibling block cannot reference a variable in a later sibling block
   - *correct:*
     - Dead Load := 15psf
