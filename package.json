@@ -1,6 +1,6 @@
 {
   "name": "calc-notes",
-  "version": "0.0.1",
+  "version": "0.2.2",
   "description": "calculate LogSeq blocks and display results",
   "main": "index.html",
   "author": "JoshG",

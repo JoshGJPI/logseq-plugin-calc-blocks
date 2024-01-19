@@ -1,14 +1,17 @@
 import { childTreeObject } from './index.js';
 
+const nameRegex = /\$\{([^}]+)\}/g;
+const uuidRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
+const operatorRegex = /\s[+\-*/^()]\s/;
+const wordRegex = /^[a-zA-Z]/;
+
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
 export function findVariables(text) {
 	console.log('begin findVariables');
 	//find named variables of form ${variable name}
-	let nameRegex = /\$\{([^}]+)\}/g;
 	let nameMatches = [...text.matchAll(nameRegex)];
 
 	//find uuid variables of form [variable value](((block uuid)))
-	let uuidRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
 	let uuidMatches = [...text.matchAll(uuidRegex)];
 
 	//return empty array if no variables
@@ -135,11 +138,9 @@ export function parseBlockInfo(block) {
 	}
 
 	//check if it needs to be calced based on containing an operator with a space on either side
-	let operatorRegex = /\s[+\-*/^()]\s/;
 	let containsOperator = operatorRegex.test(rawVariableValue);
 
 	//split the string by spaces and see if any items start with a letter as a test for containing a word
-	let wordRegex = /^[a-zA-Z]/;
 	let wordArray = rawVariableValue.split(" ");
 	let containsWord = false;
 
@@ -157,14 +158,15 @@ export function parseBlockInfo(block) {
 	let variables = findVariables(rawVariableValue);
 	let containsVariables = variables.length !== 0;
 
-	//if it doesn't contain space separated letter characters or it does contain variables, continue check
-	if (!containsWord || containsVariables) {
+	//if it doesn't contain space separated letter characters or it does contain variables AND it contains an operator, calculate variable
+	if ((!containsWord || containsVariables) && containsOperator) {
 		//if it contains an operator or variable name, add to calc tree
-		if (containsOperator || namesVariable) {
-			console.log("Shalt be calced");
-			toBeCalced = true;
-		}
+		console.log("Shalt be calced");
+		toBeCalced = true;
 	}
+	
+	//always calculate blocks with a ":="
+	if (namesVariable) toBeCalced = true;
 
 	let parsedBlock = {
 		uuid: block.uuid,
