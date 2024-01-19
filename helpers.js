@@ -175,7 +175,7 @@ export function parseBlockInfo(block) {
 		}
 	}
 	//if it doesn't contain a word and does contain an operator, calculate it
-	if (!containsWord, containsOperator) toBeCalced = true;
+	if (!containsWord && containsOperator) toBeCalced = true;
 	
 	//always calculate blocks with a ":="
 	if (namesVariable) toBeCalced = true;
