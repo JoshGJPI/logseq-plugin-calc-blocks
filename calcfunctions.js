@@ -347,7 +347,7 @@ export async function createChildTreeObject(uuid) {
 			if (toBeCalced) addToChildTreeObject(parsedItem);
 
 			//if it has children, push them to the runningArray for the next loop
-			if (children.length > 0) {
+			if (children?.length > 0) {
 				for (let j = 0; j < children.length; j++) {
 					// console.log(item);
 					let childBlock = await logseq.Editor.get_block(children[j]);

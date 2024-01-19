@@ -48,7 +48,7 @@ function main() {
 		//pause before running to allow DB to update with current changes
 		await new Promise((resolve) => setTimeout(resolve, 400));
 
-		console.log('begin cBlock slash');
+		console.log('begin cTree slash');
 
 		let currentBlock = await logseq.Editor.getCurrentBlock();
 		console.log(currentBlock);
