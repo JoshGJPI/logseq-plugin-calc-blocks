@@ -89,14 +89,25 @@ export async function getChildBlocks(uuid) {
 //break expression string into a number and unit
 export function parseExpressionValues(text) {
 	console.log('begin parseExpressionValues');
+	let expression = text;
+
+	//check for "-" at the beginning of the expression to see if the number is negative
+	const isNegative = text[0] === "-" ? true : false;
+	let negativeFactor = isNegative ? -1 : 1;
+
+	//remove "-", so num can be parsed
+	if (isNegative) {
+		expression = expression.slice(1);
+	}
 
 	//confirm input is a string to enable regex searches
-	const num = parseFloat(text.match(/^[\d\.]+/));
-	const letters = text.match(/[a-zA-Z]+.*/) ? text.match(/[a-zA-Z]+.*/) : [''];
+	const num = parseFloat(expression.match(/^[\d\.]+/));
+	const letters = expression.match(/[a-zA-Z]+.*/) ? expression.match(/[a-zA-Z]+.*/) : [''];
 
 	let object = {
 		rawText: text,
-		value: num,
+		//apply negative factor to num for resultant value
+		value: num * negativeFactor,
 		unit: letters[0],
 	};
 
