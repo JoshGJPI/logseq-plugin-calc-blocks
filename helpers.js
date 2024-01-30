@@ -118,8 +118,8 @@ export function parseExpressionValues(text) {
 export function parseBlockInfo(block) {
 	console.log('begin parseBlockInfo');
 	console.log(block);
-	//if the block doesn't exist, stop
-	if (block === undefined) return false;
+	//if the block doesn't exist or has no content, stop
+	if (block === undefined || block?.content === "") return false;
 
 	let rawContent = block.content ? block.content : block.rawContent
 	//get only first line to avoid block parameters
