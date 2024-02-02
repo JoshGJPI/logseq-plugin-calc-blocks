@@ -34,18 +34,20 @@
 - Units are currently ignored. The last unit displayed in the equation will be copied onto the result
   - *example:* sample := 20psf * 10ft = 200ft
   - *current workaround:* sample := 20psf * 10ft + 0plf = 200plf
-- Variable names must be defined before they are referenced - This means a parent block cannot reference a variable in a child block, and a sibling block cannot reference a variable in a later sibling block
+- Variable names must be defined as a child, grandchild, etc. of the 'current block' used to initiate the **CTree** command
   - *correct:*
-    - Dead Load := 15psf
-    - Live Load := 20psf
-    - Total Load := ${Dead Load} + ${Live Load}
+    - Parent block
+      - Total Load := ${Dead Load} + ${Live Load} *(references variables of child blocks)*
+        - Dead Load := 15psf
+        - Live Load := 20psf
+      - Total Line Load := ${Total Load} * ${Tributary Area} + 0plf *(references variable in later sibling block)
       - Tributary Area := 10ft
-      - Total Line Load := ${Total Load} * ${Tributary Area} + 0plf
   - *incorrect:*
-    - Total Load := ${Dead Load} + ${Live Load} *(references variables of child blocks)*
-      - Dead Load := 15psf
-      - Live Load := 20psf
-    - Total Line Load := ${Total Load} * ${Tributary Area} + 0plf *(references variable in later sibling block)
+    - Parent block
+      - Total Load := ${Dead Load} + ${Live Load} *(references variables of child blocks)*
+        - Dead Load := 15psf
+        - Live Load := 20psf
+      - Total Line Load := ${Total Load} * ${Tributary Area} + 0plf *(references variable in later sibling block)
     - Tributary Area := 10ft
   
 ### API

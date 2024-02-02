@@ -135,8 +135,11 @@ export function calcVariableBlock(uuid) {
 
 	//find the variables in the block content
 	let variables = findVariables(rawCalcContent);
-
 	console.log(variables);
+
+	//if there's an error with the variables, return false
+	if (variables === false) return false;
+
 	let allVariablesCalced = true;
 	//see if all variables have been calced and parse them for block calculation
 	let calculatedVariables = variables.map(item => {
@@ -385,10 +388,19 @@ export async function calculateTree(object) {
 	do {
 		for (let i = 0; i < treeObject.variableBlocks.length; i++) {
 			console.log(treeObject.variableBlocks[i]);
-			let blockUUID = treeObject.variableBlocks[i].uuid
+			let variableBlock = treeObject.variableBlocks[i];
+			let hasBeenCalced = variableBlock.hasBeenCalced;
+
+			//if the block has been calced, continue on
+			if (hasBeenCalced) continue;
+
+			let blockUUID = variableBlock.uuid
 			let calculatedBlock = calcVariableBlock(blockUUID);
+
+			//if there's an error calculating the block, continue on
 			if (!calculatedBlock) continue;
-			//update tree object values
+
+			//otherwise update tree object values
 			treeObject[blockUUID] = calculatedBlock;
 			//THIS MAY OVERRIDE OTHER BLOCKS IF i ISN'T COORDINATED
 			treeObject.totalBlocks[i] = calculatedBlock;

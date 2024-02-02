@@ -32,6 +32,7 @@ export function findVariables(text) {
 		};
 	});
 
+	let undefinedVariable = false;
 	//parse and return array of found uuid variables
 	let uuidVariables = uuidMatches.map((match) => {
 		console.log("Found a UUID variable!");
@@ -40,9 +41,11 @@ export function findVariables(text) {
 
 		//give context if error
 		if (!childTreeObject[uuid]?.variableName) {
+			undefinedVariable = true;
 			console.log("variable name error");
 			console.log(match);
 			console.log(childTreeObject)
+			return false;
 		}
 		let variableName = childTreeObject[uuid].variableName;
 		
@@ -55,7 +58,10 @@ export function findVariables(text) {
 		};
 	});
 
-	//compile and return results in an array
+	//if a variable is undefined, return false
+	if (undefinedVariable) return false;
+
+	//if all variables are defined, compile and return results in an array
 	let compiledArray = [...namedVariables, ...uuidVariables];
 	return compiledArray;
 }
