@@ -1,3 +1,4 @@
+import { addToChildTreeObject } from './calcfunctions.js';
 import { childTreeObject } from './index.js';
 
 export const nameRegex = /\$\{([^}]+)\}/g;
@@ -8,7 +9,7 @@ export const wordRegex = /^[a-zA-Z]/;
 export const nameVariableRegex = /\${.*?}/g;
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
-export function findVariables(text) {
+export async function findVariables(text) {
 	console.log('begin findVariables');
 	//find named variables of form ${variable name}
 	let nameMatches = [...text.matchAll(nameRegex)];
@@ -34,18 +35,26 @@ export function findVariables(text) {
 
 	let undefinedVariable = false;
 	//parse and return array of found uuid variables
-	let uuidVariables = uuidMatches.map((match) => {
+	let uuidVariables = await Promise.all(uuidMatches.map(async (match) => {
 		console.log("Found a UUID variable!");
 		//replace [value](((uuid))) format with variable's name from global object
 		let uuid = match[2];
 
 		//give context if error
 		if (!childTreeObject[uuid]?.variableName) {
-			undefinedVariable = true;
-			console.log("variable name error");
-			console.log(match);
-			console.log(childTreeObject)
-			return false;
+			let foreignBlock = await logseq.Editor.get_block(uuid);
+			let foreignParsedBlock = await parseBlockInfo(foreignBlock);
+			let toBeCalced = foreignParsedBlock.toBeCalced;
+
+			if (toBeCalced) addToChildTreeObject(foreignParsedBlock);
+
+			if (!childTreeObject[uuid]?.variableName) {
+				undefinedVariable = true;
+				console.log("variable name error");
+				console.log(match);
+				console.log(childTreeObject)
+				return false;
+			}
 		}
 		let variableName = childTreeObject[uuid].variableName;
 		
@@ -56,7 +65,7 @@ export function findVariables(text) {
 			name: variableName,
 			type: 'calced',
 		};
-	});
+	}));
 
 	//if a variable is undefined, return false
 	if (undefinedVariable) return false;
@@ -121,7 +130,7 @@ export function parseExpressionValues(text) {
 }
 
 //take raw content of block and convert into info for calcs
-export function parseBlockInfo(block) {
+export async function parseBlockInfo(block) {
 	console.log('begin parseBlockInfo');
 	console.log(block);
 	//if the block doesn't exist or has no content, stop
@@ -181,7 +190,7 @@ export function parseBlockInfo(block) {
 	//If it doesn't contain a word or it does contain ":=", check for variables
 	if (!containsWord && namesVariable) {
 		//check to see if other variables are included in expression
-		variables = findVariables(rawVariableValue);
+		variables = await findVariables(rawVariableValue);
 		containsVariables = variables.length !== 0;
 
 		//if it contains variables OR it contains an operator, calculate variable

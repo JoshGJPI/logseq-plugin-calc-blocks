@@ -107,12 +107,12 @@ export function calculateBlockValue(block) {
 }
 
 //calculate block without variables
-export function calcBlock(rawBlock) {
+export async function calcBlock(rawBlock) {
 	console.log('begin calcBlock');
 	//get the current block
 	let block = rawBlock;
 	//parse it and prep info for calculation
-	let parsedBlock = parseBlockInfo(block);
+	let parsedBlock = await parseBlockInfo(block);
 
 	//if the block doesn't contain calcable content or is undefined, return false
 	let calculateBlock = parsedBlock?.toBeCalced;
@@ -128,13 +128,13 @@ export function calcBlock(rawBlock) {
 }
 
 //calculate a block containing variable(s)
-export function calcVariableBlock(uuid) {
+export async function calcVariableBlock(uuid) {
 	console.log("begin calcVariableBlock");
 	let calcBlock = childTreeObject[uuid];
 	let {rawCalcContent} = calcBlock;
 
 	//find the variables in the block content
-	let variables = findVariables(rawCalcContent);
+	let variables = await findVariables(rawCalcContent);
 	console.log(variables);
 
 	//if there's an error with the variables, return false
@@ -289,7 +289,7 @@ childTreeObject.calculatedBlocks.push(treeObject);
 */
 
 //standardized way of adding blocks to child tree object
-function addToChildTreeObject(block) {
+export function addToChildTreeObject(block) {
 	console.log(`add ${block.variableName} to childTreeObject`);
 
 	let uuid = block.uuid;
@@ -323,11 +323,11 @@ export async function createChildTreeObject(uuid) {
 	//return false if block contains no children
 	if (!children) {
 		console.log('No children');
-		return false;
+		// return false;
 	}
 
 	//parse through current block
-	let currentParsedBlock = parseBlockInfo(currentBlock);
+	let currentParsedBlock = await parseBlockInfo(currentBlock);
 
 	//if current block has information, add it to global object
 	if (currentParsedBlock.toBeCalced) addToChildTreeObject(currentParsedBlock);
@@ -343,7 +343,7 @@ export async function createChildTreeObject(uuid) {
 		//loop through array and parse each item
 		for (let i = 0; i < parsingArray.length; i++) {
 			console.log('begin parsingArray loop');
-			let parsedItem = parseBlockInfo(parsingArray[i]);
+			let parsedItem = await parseBlockInfo(parsingArray[i]);
 			// console.log(parsedItem);
 			let { toBeCalced, children } = parsedItem;
 			//if it's to be calced add it to the childTreeObject
@@ -373,7 +373,7 @@ export async function calculateTree(object) {
 		//setup all block values without variables first
 		let block = treeObject.totalBlocks[i];
 		if (!block.containsVariables) {
-			let calculatedBlock = calcBlock(block);
+			let calculatedBlock = await calcBlock(block);
 
 			//update tree object values
 			treeObject[block.uuid] = calculatedBlock;
@@ -395,7 +395,7 @@ export async function calculateTree(object) {
 			if (hasBeenCalced) continue;
 
 			let blockUUID = variableBlock.uuid
-			let calculatedBlock = calcVariableBlock(blockUUID);
+			let calculatedBlock = await calcVariableBlock(blockUUID);
 
 			//if there's an error calculating the block, continue on
 			if (!calculatedBlock) continue;
