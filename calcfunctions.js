@@ -8,6 +8,8 @@ import {
 	trimmedOperatorRegex
 } from './helpers.js';
 
+const unitCancel = "_";
+
 //get variable value from variable name
 function getCalcedVariableValue(name) {
 	let variableUUID = childTreeObject.variables[name].uuid;
@@ -25,10 +27,13 @@ export function calculateStringValue(text) {
 
 	//remove training spaces, then split expressions by internal spaces " "
 	let contentArray = text.trim().split(' ');
+	
+	//remove empty elements in array to avoid errors
+	let spacelessContentArray = contentArray.filter(item => item !== "");
 	let unitsArray = [];
 
 	//remove units and convert into array of numbers for calculation
-	let parsedArray = contentArray.map((item) => {
+	let parsedArray = spacelessContentArray.map((item) => {
 		//check to see if input is a number
 		let isNumber = typeof item === "number";
 
@@ -82,7 +87,9 @@ export function calculateBlockValue(block) {
 
 	//if the values had units, assume the last one is the resultant unit (for now)
 	if (unitsArray.length > 0) {
-		let resultUnit = unitsArray[unitsArray.length - 1];
+		//if unit canceler is included, don't include unit in result
+		let includesCanceler = unitsArray.includes(unitCancel);
+		let resultUnit = includesCanceler ? "" : unitsArray[unitsArray.length - 1];
 		resultStr = `${resultStr}${resultUnit}`;
 		calcBlock.unit = resultUnit;
 	}
@@ -209,7 +216,9 @@ export async function calcVariableBlock(uuid) {
 
 	//if the values had units, assume the last one is the resultant unit (for now)
 	if (unitsArray.length > 0) {
-		let resultUnit = unitsArray[unitsArray.length - 1];
+		//if unit canceler is included, don't include unit in result
+		let includesCanceler = unitsArray.includes(unitCancel);
+		let resultUnit = includesCanceler ? "" : unitsArray[unitsArray.length - 1];
 		resultStr = `${resultStr}${resultUnit}`;
 		calcBlock.unit = resultUnit;
 	}
@@ -247,6 +256,7 @@ export async function calcVariableBlock(uuid) {
 export async function updateBlockDisplay(block) {
 	console.log('begin updateBlockDisplay');
 	let { rawContent, calculatedContent } = block;
+	//if there are no changes, don't update block
 	if (rawContent === calculatedContent) {
 		console.log('no changes');
 		return false;

@@ -37,7 +37,7 @@ function main() {
 		let currentBlock = await logseq.Editor.getCurrentBlock();
 		console.log(currentBlock);
 		//calculate block contents
-		let calculatedBlock = calcBlock(currentBlock);
+		let calculatedBlock = await calcBlock(currentBlock);
 
 		//update current block
 		await updateBlockDisplay(calculatedBlock);
