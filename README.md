@@ -31,10 +31,12 @@
     - width := 10ft
     - area := <ins>8ft</ins> * <ins>10ft</ins> + 0sf = 80sf
 ## Current Limitations
-- Units are currently ignored. The last unit displayed in the equation will be copied onto the result
+- Units are currently ignored. The last unit displayed in the equation will be copied onto the result.
   - *example:* sample := 20psf * 10ft = 200ft
   - *current workaround:* sample := 20psf * 10ft + 0plf = 200plf
-- Variable names must be defined as a child, grandchild, etc. of the 'current block' used to initiate the **CTree** command
+  - **Adding an underscore (_) to a unit will make the result *unitless***
+    - *example:* sample := 500lbs * 10 / 100_ = 50
+- Variable names must be defined as a child, grandchild, etc. of the 'current block' used to initiate the **CTree** command. After a variable has been converted into the [display value](((uuid))) form, they can look for variable names outside the current block's children/grandchildren
   - *correct:*
     - Parent block
       - Total Load := ${Dead Load} + ${Live Load} *(references variables of child blocks)*

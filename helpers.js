@@ -27,8 +27,9 @@ export async function findVariables(text) {
 	let namedVariables = nameMatches.map((match) => {
 		return {
 			index: match.index,
-			rawValue: match[0],
-			name: match[1],
+			//trim to avoid errors from spaces at the end
+			rawValue: match[0].trim(),
+			name: match[1].trim(),
 			type: 'raw',
 		};
 	});
@@ -117,7 +118,8 @@ export function parseExpressionValues(text) {
 
 	//confirm input is a string to enable regex searches
 	const num = parseFloat(expression.match(/^[\d\.]+/));
-	const letters = expression.match(/[a-zA-Z]+.*/) ? expression.match(/[a-zA-Z]+.*/) : [''];
+	//include "_" to check for unit canceler
+	const letters = expression.match(/[a-zA-Z_]+.*/) ? expression.match(/[a-zA-Z_]+.*/) : [''];
 
 	let object = {
 		rawText: text,
