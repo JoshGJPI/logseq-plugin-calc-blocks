@@ -47,6 +47,7 @@ export async function findVariables(text) {
 			let foreignParsedBlock = await parseBlockInfo(foreignBlock);
 			let toBeCalced = foreignParsedBlock.toBeCalced;
 
+			//if veriable is supposed to be calced, add it to global object
 			if (toBeCalced) addToChildTreeObject(foreignParsedBlock);
 
 			if (!childTreeObject[uuid]?.variableName) {

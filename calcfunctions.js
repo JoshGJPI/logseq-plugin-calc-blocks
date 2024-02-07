@@ -156,6 +156,11 @@ export async function calcVariableBlock(uuid) {
 		let variableName = item.name;
 		let variableObject = childTreeObject.variables[variableName];
 		console.log(variableObject);
+
+		//give user warning if variable name doesn't exist
+		if (variableObject === undefined) {
+			logseq.UI.showMsg(`variable "${variableName}" hasn't been defined at: "${calcBlock.rawContent}"\nCheck variable definitions for spelling errors`, "error", {timeout: 20000});
+		}
 		let variableUUID = variableObject.uuid;
 		let {hasBeenCalced, unit, value, valueStr} = childTreeObject[variableUUID];
 
