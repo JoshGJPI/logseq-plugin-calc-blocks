@@ -175,8 +175,10 @@ export async function parseBlockInfo(block) {
 
 	//remove named variables from the string before checking for words
 	let namelessArray = rawVariableValue.replaceAll(nameVariableRegex, "")
+	//remove existing results from string before checking for words
+	let resultlessArray = namelessArray.split("=")[0];
 	//split the string by spaces and see if any items start with a letter as a test for containing a word
-	let wordArray = namelessArray.split(" ");
+	let wordArray = resultlessArray.split(" ");
 	let containsWord = false;
 
 	//check each item to see if it starts with a letter
@@ -191,7 +193,7 @@ export async function parseBlockInfo(block) {
 	});
 
 	//If it doesn't contain a word or it does contain ":=", check for variables
-	if (!containsWord && namesVariable) {
+	if (!containsWord || namesVariable) {
 		//check to see if other variables are included in expression
 		variables = await findVariables(rawVariableValue);
 		containsVariables = variables.length !== 0;
