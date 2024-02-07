@@ -51,7 +51,11 @@
         - Live Load := 20psf
       - Total Line Load := ${Total Load} * ${Tributary Area} + 0plf *(references variable in later sibling block)
     - Tributary Area := 10ft
-  
+## Updates from Previous Version
+- Added warning message for undefined variables
+- Added _ unit cancel character
+- Added support for [value](((uuid))) variable form to reference blocks outside 'current block' children/grandchildren
+
 ### API
 
 [![npm version](https://badge.fury.io/js/%40logseq%2Flibs.svg)](https://badge.fury.io/js/%40logseq%2Flibs)
