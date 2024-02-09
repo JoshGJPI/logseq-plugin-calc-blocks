@@ -58,6 +58,10 @@ export function calculateStringValue(text) {
 		return parsedItem.value;
 	});
 
+	//check for errors in parsedArray
+	let parsedError = parsedArray.includes(NaN);
+	if (parsedError) return false;
+
 	//rejoin array with spaces
 	let evalString = parsedArray.join(' ');
 	console.log(evalString);
@@ -82,7 +86,16 @@ export function calculateBlockValue(block) {
 	//only get the content to be calculated (before the = sign)
 	let content = calcBlock.rawCalcContent.split('=')[0].trim();
 	//calculate the value of the block
-	let {resultNum, unitsArray} = calculateStringValue(content);
+	let calcedString = calculateStringValue(content);
+
+	//check if there's an error in the string calculation
+	if (calcedString === false) {
+		logseq.UI.showMsg(`error at "${content}"`, "error", {timeout: 20000});
+		throw `error at ${content}`;
+	}
+
+	//parse calc results
+	let {resultNum, unitsArray} = calcedString
 	let resultStr = `${resultNum}`;
 
 	//if the values had units, assume the last one is the resultant unit (for now)
@@ -138,7 +151,7 @@ export async function calcBlock(rawBlock) {
 export async function calcVariableBlock(uuid) {
 	console.log("begin calcVariableBlock");
 	let calcBlock = childTreeObject[uuid];
-	let {rawCalcContent} = calcBlock;
+	let {rawCalcContent, rawContent} = calcBlock;
 
 	//find the variables in the block content
 	let variables = await findVariables(rawCalcContent);
@@ -213,7 +226,16 @@ export async function calcVariableBlock(uuid) {
 
 	//use parsed string for eval calculation
 	console.log(runningEvalString);
-	let {resultNum, unitsArray} = calculateStringValue(runningEvalString);
+	let calcedString = calculateStringValue(runningEvalString);
+
+	//check if there's an error in the string calculation
+	if (calcedString === false) {
+		logseq.UI.showMsg(`error at "${rawContent}"`, "error", {timeout: 20000});
+		throw `error at ${rawContent}`;
+	}
+
+	//parse calc results
+	let {resultNum, unitsArray} = calcedString
 	let resultStr = `${resultNum}`;
 	
 	console.log(parsedCalcContent)
