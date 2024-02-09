@@ -1,12 +1,24 @@
 import { addToChildTreeObject } from './calcfunctions.js';
 import { childTreeObject } from './index.js';
 
+//finds form of ${sample text}
 export const nameRegex = /\$\{([^}]+)\}/g;
+//finds form of [text](((block uuid)))
 export const uuidRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
+//finds a space separated operator within a whole string
 export const operatorRegex = /\s[+\-*/^()<>?:]\s/;
+//identifies if a single character is an operator
 export const trimmedOperatorRegex = /[+\-*/^()<>?:]/;
+//checks if a string begins with a letter character
 export const wordRegex = /^[a-zA-Z]/;
+//find text surrounded by ${sample text}
 export const nameVariableRegex = /\${.*?}/g;
+//find numbers at the start of a string
+export const startingNumberRegex = /^[\d\.]+/;
+//include "_" to check for unit canceler
+export const unitsRegex = /[a-zA-Z_%]+.*/;
+//find all brackets [ ] in a string
+export const bracketsRegex = /[\[\]]*/g;
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
 export async function findVariables(text) {
@@ -118,9 +130,9 @@ export function parseExpressionValues(text) {
 	}
 
 	//confirm input is a string to enable regex searches
-	const num = parseFloat(expression.match(/^[\d\.]+/));
-	//include "_" to check for unit canceler
-	const letters = expression.match(/[a-zA-Z_]+.*/) ? expression.match(/[a-zA-Z_]+.*/) : [''];
+	const num = parseFloat(expression.match(startingNumberRegex));
+	//check for units in the string
+	const letters = expression.match(unitsRegex) ? expression.match(unitsRegex) : [''];
 
 	let object = {
 		rawText: text,
@@ -165,7 +177,7 @@ export async function parseBlockInfo(block) {
 	if (namesVariable) {
 		let infoArray = firstLine.split(':=');
 		//take the part of the string before the :=, and remove any [[]] from block references
-		variableName = infoArray[0].replaceAll(/[\[\]]*/g, '');
+		variableName = infoArray[0].replaceAll(bracketsRegex, '');
 		rawVariableName = infoArray[0];
 		rawVariableValue = infoArray[1];
 	}
