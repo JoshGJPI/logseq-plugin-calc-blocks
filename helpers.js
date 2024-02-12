@@ -11,6 +11,8 @@ export const operatorRegex = /\s[+\-*/^()<>?:]\s/;
 export const trimmedOperatorRegex = /[+\-*/^()<>?:]/;
 //checks if a string begins with a letter character
 export const wordRegex = /^[a-zA-Z]/;
+//check for trigfunctions
+export const trigRegex = /^[a-z]{3}\(.*?\)/;
 //find text surrounded by ${sample text}
 export const nameVariableRegex = /\${.*?}/g;
 //find numbers at the start of a string
@@ -196,6 +198,10 @@ export async function parseBlockInfo(block) {
 	//check each item to see if it starts with a letter
 	wordArray.every(item => {
 		let isWord = wordRegex.test(item);
+		//check to see if word is a trig function
+		let isTrig = trigRegex.test(item);
+		if (isTrig) console.log(`${item} is a trig expression`);
+		//if it's a word and not a trig function, return false
 		if (isWord) {
 			console.log(`${item} is a word!`);
 			containsWord = true;
