@@ -51,11 +51,15 @@ export function calculateStringValue(text) {
 		//if item is a number, convert to string for parseExpressionValues()
 		let stringItem = isNumber ? item.toString() : item;
 		//break nonoperator 30psf into 30 & "psf"
-		let parsedItem = parseExpressionValues(stringItem);
+		let {value, unit} = parseExpressionValues(stringItem);
 		//add units to unit array
-		if (parsedItem.unit) unitsArray.push(parsedItem.unit);
+		if (unit) unitsArray.push(unit);
 
-		return parsedItem.value;
+		//if the number is negative, wrap in parenthesis to avoid issues with ** operator
+		let isNegative = value < 0 ? true : false;
+		let parsedValue = isNegative ? `(${value})` : value;
+
+		return parsedValue;
 	});
 
 	//check for errors in parsedArray
