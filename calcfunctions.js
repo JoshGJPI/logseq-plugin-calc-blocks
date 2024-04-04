@@ -5,7 +5,8 @@ import {
 	parseExpressionValues,
 	parseBlockInfo,
 	operatorRegex,
-	trimmedOperatorRegex
+	trimmedOperatorRegex,
+	parenthesisRegex,
 } from './helpers.js';
 
 const unitCancel = "_";
@@ -54,6 +55,9 @@ export function calculateStringValue(text) {
 		let {value, unit} = parseExpressionValues(stringItem);
 		//add units to unit array
 		if (unit) unitsArray.push(unit);
+
+		//if the parsed expression isn't a number, return empty
+		if (isNaN(value)) return;
 
 		//if the number is negative, wrap in parenthesis to avoid issues with ** operator
 		let isNegative = value < 0 ? true : false;
@@ -106,7 +110,8 @@ export function calculateBlockValue(block) {
 	if (unitsArray.length > 0) {
 		//if unit canceler is included, don't include unit in result
 		let includesCanceler = unitsArray.includes(unitCancel);
-		let resultUnit = includesCanceler ? "" : unitsArray[unitsArray.length - 1];
+		//remove parenthesis from units
+		let resultUnit = includesCanceler ? "" : unitsArray[unitsArray.length - 1].replace(parenthesisRegex,"");
 		resultStr = `${resultStr}${resultUnit}`;
 		calcBlock.unit = resultUnit;
 	}
@@ -249,7 +254,8 @@ export async function calcVariableBlock(uuid) {
 	if (unitsArray.length > 0) {
 		//if unit canceler is included, don't include unit in result
 		let includesCanceler = unitsArray.includes(unitCancel);
-		let resultUnit = includesCanceler ? "" : unitsArray[unitsArray.length - 1];
+		//remove parenthesis from units
+		let resultUnit = includesCanceler ? "" : unitsArray[unitsArray.length - 1].replace(parenthesisRegex,"");
 		resultStr = `${resultStr}${resultUnit}`;
 		calcBlock.unit = resultUnit;
 	}

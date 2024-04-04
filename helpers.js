@@ -21,6 +21,10 @@ export const startingNumberRegex = /^[\d\.]+/;
 export const unitsRegex = /[a-zA-Z_%]+.*/;
 //find all brackets [ ] in a string
 export const bracketsRegex = /[\[\]]*/g;
+//find all parenthesis ( ) in a string
+export const parenthesisRegex = /[()]/g;
+//check if a string starts and ends with ()
+export const surroundingParenthesisRegex = /^\([^)]+\)$/;
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
 export async function findVariables(text) {
@@ -121,6 +125,7 @@ export async function getChildBlocks(uuid) {
 export function parseExpressionValues(text) {
 	console.log('begin parseExpressionValues');
 	let expression = text;
+	let numValue = 0;
 
 	//check for "-" at the beginning of the expression to see if the number is negative
 	const isNegative = text[0] === "-" ? true : false;
@@ -133,16 +138,25 @@ export function parseExpressionValues(text) {
 
 	//confirm input is a string to enable regex searches
 	const num = parseFloat(expression.match(startingNumberRegex));
+	//check to see if num isn't a number
+	if (num === NaN) {
+		console.log(`${expression} is NaN`);
+	} else {
+		//if num is a number, apply negative factor
+		numValue = num * negativeFactor;
+	}
+
 	//check for units in the string
 	const letters = expression.match(unitsRegex) ? expression.match(unitsRegex) : [''];
 
 	let object = {
 		rawText: text,
 		//apply negative factor to num for resultant value
-		value: num * negativeFactor,
+		value: numValue,
 		unit: letters[0],
 	};
 
+	console.log(object);
 	return object;
 }
 
