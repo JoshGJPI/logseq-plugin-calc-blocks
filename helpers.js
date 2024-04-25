@@ -4,7 +4,9 @@ import { childTreeObject } from './index.js';
 //finds form of ${sample text}
 export const nameRegex = /\$\{([^}]+)\}/g;
 //finds form of [text](((block uuid)))
-export const uuidRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
+export const namedUUIDRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
+//finds form of (((block uuid)))
+export const UUIDRegex = /^\(\(([^\)]+)\)\)$/;
 //finds a space separated operator within a whole string
 export const operatorRegex = /\s[+\-*/^()<>?:]\s/;
 //identifies if a single character is an operator
@@ -33,7 +35,7 @@ export async function findVariables(text) {
 	let nameMatches = [...text.matchAll(nameRegex)];
 
 	//find uuid variables of form [variable value](((block uuid)))
-	let uuidMatches = [...text.matchAll(uuidRegex)];
+	let uuidMatches = [...text.matchAll(namedUUIDRegex)];
 
 	//return empty array if no variables
 	if (nameMatches.length === 0 && uuidMatches.length === 0) {
@@ -167,10 +169,24 @@ export async function parseBlockInfo(block) {
 	//if the block doesn't exist or has no content, stop
 	if (block === undefined || block?.content === "") return false;
 
-	let rawContent = block.content ? block.content : block.rawContent
+	let parsingBlock = block;
+	//checks to see if the block is a block reference
+	console.log(block.content);
+	let isBlockRef = UUIDRegex.test(block.content);
+	console.log(isBlockRef);
+
+	if (isBlockRef) {
+		let parsingUUID = block.content.slice(2,-2);
+		let foreignBlock = await logseq.Editor.get_block(parsingUUID);
+		parsingBlock = foreignBlock;
+		console.log(foreignBlock);
+		console.log("foreign UUID updated")
+	}
+
+	let rawContent = parsingBlock.content ? parsingBlock.content : parsingBlock.rawContent
 	//get only first line to avoid block parameters
 	let firstLine = rawContent.split('\n')[0];
-	let containsChildren = block.children.length > 0;
+	let containsChildren = parsingBlock.children.length > 0;
 	let childrenArray = [];
 
 	//check to see if a variable has been declared
@@ -184,7 +200,7 @@ export async function parseBlockInfo(block) {
 
 	//if it contains children, fill the array with their uuids
 	if (containsChildren) {
-		childrenArray = block.children.map((item) => {
+		childrenArray = parsingBlock.children.map((item) => {
 			return item[1];
 		});
 	}
@@ -244,7 +260,7 @@ export async function parseBlockInfo(block) {
 	if (namesVariable) toBeCalced = true;
 
 	let parsedBlock = {
-		uuid: block.uuid,
+		uuid: parsingBlock.uuid,
 		rawContent: rawContent.split('\n')[0],
 		calculatedContent: '',
 		value: false,
