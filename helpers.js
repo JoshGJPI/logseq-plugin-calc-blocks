@@ -61,13 +61,13 @@ export async function findVariables(text) {
 		//replace [value](((uuid))) format with variable's name from global object
 		let uuid = match[2];
 
-		//give context if error
+		//if the block isn't defined in the childTreeObject, get it and parse it
 		if (!childTreeObject[uuid]?.variableName) {
 			let foreignBlock = await logseq.Editor.get_block(uuid);
 			let foreignParsedBlock = await parseBlockInfo(foreignBlock);
 			let toBeCalced = foreignParsedBlock.toBeCalced;
 
-			//if veriable is supposed to be calced, add it to global object
+			//if variable is supposed to be calced, add it to global object
 			if (toBeCalced) addToChildTreeObject(foreignParsedBlock);
 
 			if (!childTreeObject[uuid]?.variableName) {
@@ -153,7 +153,6 @@ export function parseExpressionValues(text) {
 
 	let object = {
 		rawText: text,
-		//apply negative factor to num for resultant value
 		value: numValue,
 		unit: letters[0],
 	};
@@ -175,6 +174,7 @@ export async function parseBlockInfo(block) {
 	let isBlockRef = UUIDRegex.test(block.content);
 	console.log(isBlockRef);
 
+	//if block is a block reference, get the block and add to the calcTree
 	if (isBlockRef) {
 		let parsingUUID = block.content.slice(2,-2);
 		let foreignBlock = await logseq.Editor.get_block(parsingUUID);
@@ -248,7 +248,6 @@ export async function parseBlockInfo(block) {
 
 		//if it contains variables OR it contains an operator, calculate variable
 		if (containsVariables || containsOperator) {
-			//if it contains an operator or variable name, add to calc tree
 			console.log("Shalt be calced");
 			toBeCalced = true;
 		}
@@ -272,6 +271,7 @@ export async function parseBlockInfo(block) {
 		variableName: variableName.trim(),
 		rawCalcContent: rawVariableValue.trim(),
 		toBeCalced: toBeCalced,
+		isForeign: isBlockRef,
 		hasBeenCalced: false,
 		containsVariables: containsVariables,
 		variables: variables,
