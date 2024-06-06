@@ -75,7 +75,13 @@ export function calculateStringValue(text) {
 	console.log(evalString);
 	//calculate block value and prepare text display value - round result to 3 decimal places
 	const roundAmount = 1000;
-	let resultNum = Math.round(eval(evalString)*roundAmount)/roundAmount;
+	let resultNum;
+	try {
+		resultNum = Math.round(eval(evalString)*roundAmount)/roundAmount;
+	} catch (error) {
+		//if there's an error in the calc, return false to register an error message
+		return false;
+	}
 
 	let calcStringObject = {
 		resultNum: resultNum,
