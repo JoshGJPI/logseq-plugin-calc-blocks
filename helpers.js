@@ -13,6 +13,8 @@ export const operatorRegex = /\s[+\-*/^()<>?:]\s/;
 export const trimmedOperatorRegex = /[+\-*/^()<>?:]/;
 //checks if a string begins with a letter character
 export const wordRegex = /^[a-zA-Z]/;
+//checks if a string is a block reference - starts and ends with [[ ]]
+export const pageRefRegex = /\[\[(.*)\]\]/;
 //check for trigfunctions
 export const trigRegex = /^[a-z]{3}\(.*?\)/;
 //find text surrounded by ${sample text}
@@ -228,12 +230,14 @@ export async function parseBlockInfo(block) {
 	//check each item to see if it starts with a letter
 	wordArray.every(item => {
 		let isWord = wordRegex.test(item);
+		let isPageRef = pageRefRegex.test(item);
 		//check to see if word is a trig function
 		let isTrig = trigRegex.test(item);
 		if (isTrig) console.log(`${item} is a trig expression`);
 		//if it's a word and not a trig function, return false
-		if (isWord) {
-			console.log(`${item} is a word!`);
+		if (isWord || isPageRef) {
+			if (isWord) console.log(`${item} is a word!`);
+			if (isPageRef) console.log(`${item} is a Page Ref!`);
 			containsWord = true;
 			return false
 		}

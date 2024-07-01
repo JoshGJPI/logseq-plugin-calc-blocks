@@ -236,7 +236,6 @@ export async function calcVariableBlock(uuid) {
 		let modifiedString = runningEvalString.replace(rawValue, valueStr);
 		//send updates to runningEvalString
 		runningEvalString = modifiedString;
-
 	}
 
 	//use parsed string for eval calculation
@@ -438,6 +437,7 @@ export async function calculateTree(object) {
 	console.log(childTreeObject);
 	//calculate blocks containing variables
 	console.log("begin calcing variable blocks");
+	let variableCycle = 0;
 	do {
 		for (let i = 0; i < treeObject.variableBlocks.length; i++) {
 			console.log(treeObject.variableBlocks[i]);
@@ -459,8 +459,11 @@ export async function calculateTree(object) {
 			treeObject.totalBlocks[i] = calculatedBlock;
 			treeObject.calculatedBlocks.push(calculatedBlock);
 		}
-	} while (treeObject.totalBlocks.length > treeObject.calculatedBlocks.length)
+		variableCycle = variableCycle + 1;
+
+		//stop after 10 rounds to prevent infinite cycles
+	} while (treeObject.totalBlocks.length > treeObject.calculatedBlocks.length && variableCycle < 10)
 	console.log(childTreeObject);
-	
+	console.log(`========================================\n======= VARIABLE CYCLE COUNT: ${variableCycle} =======\n========================================`);
 	return childTreeObject;
 }
