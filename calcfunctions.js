@@ -345,11 +345,31 @@ export function addToChildTreeObject(block) {
 	console.log(`add ${block.variableName} to childTreeObject`);
 
 	let uuid = block.uuid;
-	let variableName = block.variableName;
+	let variableName = block?.variableName;
 	let infoObject = {
 		uuid: uuid,
 		variableName: variableName,
 	};
+
+	//check if variable name is already defined
+	let variableAlreadyDefined = Object.hasOwn(childTreeObject.variables, variableName);
+	if (variableAlreadyDefined) {
+		console.log(`${variableName} has already been defined`);
+		//check if blocks have different UUIDs
+		let differingUUID = childTreeObject.variables[variableName].uuid !== block.uuid;
+		//if different UUIDs, give error and warning
+		if (differingUUID) {
+			//get existing block info for user to compare against new block info
+			let existingUUID = childTreeObject.variables[variableName].uuid;
+			let existingBlock = childTreeObject[existingUUID];
+			let existingContent = existingBlock.rawContent;
+			logseq.UI.showMsg(`${variableName} already exists! Compare:\n${existingContent}\n${block.rawContent}`, "error", {timeout: 20000});
+			console.log("========================================\n========== Duplicate Variable Names ==========\n========================================");
+			console.log("existing Block:", childTreeObject[existingUUID]);
+			console.log("new Block:", block);
+			return false;
+		}
+	}
 
 	//add block info to global object
 	childTreeObject[uuid] = block;
@@ -363,6 +383,7 @@ export function addToChildTreeObject(block) {
 	if (block.containsVariables) {
 		childTreeObject.variableBlocks.push(block);
 	}
+	return true;
 }
 
 //take UUID of a given block and return child/parent tree object
@@ -372,6 +393,8 @@ export async function createChildTreeObject(uuid) {
 	let currentBlock = await logseq.Editor.get_block(uuid);
 	let children = await getChildBlocks(uuid);
 
+	//error boolean used to stop the calc;
+	let continueCalc = true;
 	//return false if block contains no children
 	if (!children) {
 		console.log('No children');
@@ -382,7 +405,14 @@ export async function createChildTreeObject(uuid) {
 	let currentParsedBlock = await parseBlockInfo(currentBlock);
 
 	//if current block has information, add it to global object
-	if (currentParsedBlock.toBeCalced) addToChildTreeObject(currentParsedBlock);
+	if (currentParsedBlock.toBeCalced) {
+		let addSuccessful = addToChildTreeObject(currentParsedBlock);
+		//if the block can't be added, stop calc
+		if (!addSuccessful) {
+			continueCalc = false;
+			return false;
+		};
+	}
 
 	//use Do-while loop to dig through all child blocks and add to childTreeObject
 	let runningArray = children;
@@ -396,23 +426,34 @@ export async function createChildTreeObject(uuid) {
 		for (let i = 0; i < parsingArray.length; i++) {
 			console.log('begin parsingArray loop');
 			let parsedItem = await parseBlockInfo(parsingArray[i]);
-			// console.log(parsedItem);
+
 			let { toBeCalced, children } = parsedItem;
 			//if it's to be calced add it to the childTreeObject
-			if (toBeCalced) addToChildTreeObject(parsedItem);
+			if (toBeCalced) {
+				let addSuccessful = addToChildTreeObject(parsedItem);
+				//if the block can't be added, stop calc
+				if (!addSuccessful) {
+					continueCalc = false;
+					return false;
+				}
+			}	
 
 			//if it has children, push them to the runningArray for the next loop
 			if (children?.length > 0) {
 				for (let j = 0; j < children.length; j++) {
-					// console.log(item);
 					let childBlock = await logseq.Editor.get_block(children[j]);
 					runningArray.push(childBlock);
 				};
 			}
 		};
 		console.log(runningArray);
-	} while (runningArray.length > 0);
+	} while (runningArray.length > 0 && continueCalc);
 
+	//if error, return empty object
+	if (!continueCalc) {
+		console.log("error in calcs - empty childTreeObject");
+		childTreeObject = {};
+	}
 	console.log("end do-while Loop");
 	return childTreeObject;
 }
