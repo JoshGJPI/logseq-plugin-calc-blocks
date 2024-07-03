@@ -1,4 +1,4 @@
-# Calc Notes Plugin
+# Calc Notes Plugin V2.7
 - This will calculate a single block's contents ('cblock') or a block and all of its children's contents ('cTree') and add the result to the end of each calculated block
 ## Commands
 - **cBlock** - Calculates the value of the current block and updates the block's content to display the result at the end
@@ -52,18 +52,5 @@
       - Total Line Load := ${Total Load} * ${Tributary Area} + 0plf *(references variable in later sibling block)
     - Tributary Area := 10ft
 ## Updates from Previous Version
-- Added support for named variable parenthesis syntax - sample := 20psf * 10ft (plf) = 200plf
-
-### API
-
-[![npm version](https://badge.fury.io/js/%40logseq%2Flibs.svg)](https://badge.fury.io/js/%40logseq%2Flibs)
-
-##### Logseq.Editor
-
-- `registerSlashCommand: (this: LSPluginUser, tag: string, actions: Array<SlashCommandAction>) => boolean`
-- `showMsg: (content: string, status?: 'success' | 'warning' | string) => void`
-    - content support  [hiccups](https://github.com/weavejester/hiccup) string
-
-### Running the Sample
-
-- `Load unpacked plugin` in Logseq Desktop client.
+- Added support for block references and preventing duplicate variable names
+- Added support to prevent infinite loops from self-referencing variables
