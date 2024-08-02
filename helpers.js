@@ -1,103 +1,8 @@
-import { addToChildTreeObject } from './calcfunctions.js';
 import { childTreeObject } from './index.js';
+import { calcBlock } from './blockhelpers.js';
+import { calcVariableBlock } from './uuidhelpers.js';
 
-//finds form of ${sample text}
-export const nameRegex = /\$\{([^}]+)\}/g;
-//finds form of [text](((block uuid)))
-export const namedUUIDRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
-//finds form of (((block uuid)))
-export const UUIDRegex = /^\(\(([^\)]+)\)\)$/;
-//finds a space separated operator within a whole string
-export const operatorRegex = /\s[+\-*/^()<>?:]\s/;
-//identifies if a single character is an operator
-export const trimmedOperatorRegex = /[+\-*/^()<>?:]/;
-//checks if a string begins with a letter character
-export const wordRegex = /^[a-zA-Z]/;
-//checks if a string is a block reference - starts and ends with [[ ]]
-export const pageRefRegex = /\[\[(.*)\]\]/;
-//check for trigfunctions
-export const trigRegex = /^[a-z]{3}\(.*?\)/;
-//find text surrounded by ${sample text}
-export const nameVariableRegex = /\${.*?}/g;
-//find numbers at the start of a string
-export const startingNumberRegex = /^[\d\.]+/;
-//include "_" to check for unit canceler
-export const unitsRegex = /[a-zA-Z_%]+.*/;
-//find all brackets [ ] in a string
-export const bracketsRegex = /[\[\]]*/g;
-//find all parenthesis ( ) in a string
-export const parenthesisRegex = /[()]/g;
-//check if a string starts and ends with ()
-export const surroundingParenthesisRegex = /^\([^)]+\)$/;
-
-//search block text to see if a ${variable} or [variable](((uuid))) is identified
-export async function findVariables(text) {
-	console.log('begin findVariables');
-	//find named variables of form ${variable name}
-	let nameMatches = [...text.matchAll(nameRegex)];
-
-	//find uuid variables of form [variable value](((block uuid)))
-	let uuidMatches = [...text.matchAll(namedUUIDRegex)];
-
-	//return empty array if no variables
-	if (nameMatches.length === 0 && uuidMatches.length === 0) {
-		console.log('no variables');
-		return [];
-	}
-
-	//parse and return array of found named variables
-	let namedVariables = nameMatches.map((match) => {
-		return {
-			index: match.index,
-			//trim to avoid errors from spaces at the end
-			rawValue: match[0].trim(),
-			name: match[1].trim(),
-			type: 'raw',
-		};
-	});
-
-	let undefinedVariable = false;
-	//parse and return array of found uuid variables
-	let uuidVariables = await Promise.all(uuidMatches.map(async (match) => {
-		console.log("Found a UUID variable!");
-		//replace [value](((uuid))) format with variable's name from global object
-		let uuid = match[2];
-
-		//if the block isn't defined in the childTreeObject, get it and parse it
-		if (!childTreeObject[uuid]?.variableName) {
-			let foreignBlock = await logseq.Editor.get_block(uuid);
-			let foreignParsedBlock = await parseBlockInfo(foreignBlock);
-			let toBeCalced = foreignParsedBlock.toBeCalced;
-
-			//if variable is supposed to be calced, add it to global object
-			if (toBeCalced) addToChildTreeObject(foreignParsedBlock);
-
-			if (!childTreeObject[uuid]?.variableName) {
-				undefinedVariable = true;
-				console.log("variable name error");
-				console.log(match);
-				console.log(childTreeObject)
-				return false;
-			}
-		}
-		let variableName = childTreeObject[uuid].variableName;
-		
-		console.log(match, variableName);
-		return {
-			index: match.index,
-			rawValue: match[0],
-			name: variableName,
-			type: 'calced',
-		};
-	}));
-
-	//if a variable is undefined, return false
-	if (undefinedVariable) return false;
-
-	//if all variables are defined, compile and return results in an array
-	let compiledArray = [...namedVariables, ...uuidVariables];
-	return compiledArray;
-}
+export const unitCancel = "_";
 
 //take the UUID of a given block and return an array of children blocks
 export async function getChildBlocks(uuid) {
@@ -124,174 +29,129 @@ export async function getChildBlocks(uuid) {
 	);
 	return childBlockArray;
 }
+let childRunNumber = 0;
+//standardized way of adding blocks to child tree object
+export function addToChildTreeObject(block) {
+	console.log(`add ${block.variableName} to childTreeObject`);
 
-//break expression string into a number and unit
-export function parseExpressionValues(text) {
-	console.log('begin parseExpressionValues');
-	let expression = text;
-	let numValue = 0;
-
-	//check for "-" at the beginning of the expression to see if the number is negative
-	const isNegative = text[0] === "-" ? true : false;
-	let negativeFactor = isNegative ? -1 : 1;
-
-	//remove "-", so num can be parsed
-	if (isNegative) {
-		expression = expression.slice(1);
-	}
-
-	//confirm input is a string to enable regex searches
-	const num = parseFloat(expression.match(startingNumberRegex));
-	//check to see if num isn't a number
-	if (num === NaN) {
-		console.log(`${expression} is NaN`);
-	} else {
-		//if num is a number, apply negative factor
-		numValue = num * negativeFactor;
-	}
-
-	//check for units in the string
-	const letters = expression.match(unitsRegex) ? expression.match(unitsRegex) : [''];
-
-	let object = {
-		rawText: text,
-		value: numValue,
-		unit: letters[0],
+	let uuid = block.uuid;
+	let variableName = block?.variableName;
+	let infoObject = {
+		uuid: uuid,
+		variableName: variableName,
 	};
 
+	//check if variable name is already defined
+	let variableAlreadyDefined = Object.hasOwn(childTreeObject.variables, variableName);
+	if (variableAlreadyDefined) {
+		console.log(`${variableName} has already been defined`);
+		//check if blocks have different UUIDs
+		let differingUUID = childTreeObject.variables[variableName].uuid !== block.uuid;
+		//if different UUIDs, give error and warning
+		if (differingUUID) {
+			//get existing block info for user to compare against new block info
+			let existingUUID = childTreeObject.variables[variableName].uuid;
+			let existingBlock = childTreeObject[existingUUID];
+			let existingContent = existingBlock.rawContent;
+			console.log(`ChildRun: ${childRunNumber}`);
+			logseq.UI.showMsg(`${variableName} already exists! ${childRunNumber} Compare:\n${existingContent}\n${block.rawContent}`, "error", {timeout: 20000});
+			childRunNumber = childRunNumber + 1;
+			console.log(`ChildRun: ${childRunNumber}`);
+			console.log("========================================\n========== Duplicate Variable Names ==========\n========================================");
+			console.log("existing Block:", childTreeObject[existingUUID]);
+			console.log("new Block:", block);
+			return false;
+		}
+	}
+
+	//add block info to global object
+	childTreeObject[uuid] = block;
+	childTreeObject.totalBlocks.push(block);
+
+	//if block defines a variable name, populate tree.variables
+	if (variableName.length > 0) {
+		childTreeObject.variables[variableName] = infoObject;
+	}
+	//if the block contains variables, populate them in the global object
+	if (block.containsVariables) {
+		childTreeObject.variableBlocks.push(block);
+	}
+
+	// childRunNumber = childRunNumber+1;
+	return true;
+}
+
+//calculate tree of blocks for cTree
+export async function calculateTree(object) {
+	console.log('begin CalculateTree');
 	console.log(object);
-	return object;
-}
+	let treeObject = object;
+	for (let i = 0; i < treeObject.totalBlocks.length; i++) {
+		//setup all block values without variables first
+		let block = treeObject.totalBlocks[i];
+		if (!block.containsVariables) {
+			let calculatedBlock = await calcBlock(block);
 
-//take raw content of block and convert into info for calcs
-export async function parseBlockInfo(block) {
-	console.log('begin parseBlockInfo');
-	console.log(block);
-	//if the block doesn't exist or has no content, stop
-	if (block === undefined || block?.content === "") return false;
-
-	let parsingBlock = block;
-	//checks to see if the block is a block reference
-	console.log(block.content);
-	let isBlockRef = UUIDRegex.test(block.content);
-	console.log(isBlockRef);
-
-	//if block is a block reference, get the block and add to the calcTree
-	if (isBlockRef) {
-		let parsingUUID = block.content.slice(2,-2);
-		let foreignBlock = await logseq.Editor.get_block(parsingUUID);
-		parsingBlock = foreignBlock;
-		console.log(foreignBlock);
-		console.log("foreign UUID updated")
-	}
-
-	let rawContent = parsingBlock.content ? parsingBlock.content : parsingBlock.rawContent
-	//get only first line to avoid block parameters
-	let firstLine = rawContent.split('\n')[0];
-	let containsChildren = parsingBlock.children.length > 0;
-	let childrenArray = [];
-
-	//check to see if a variable has been declared
-	let namesVariable = firstLine.includes(':=');
-	let variableName = '';
-	let rawVariableName = '';
-	let rawVariableValue = firstLine;
-	let toBeCalced = false;
-	let variables = [];
-	let containsVariables = false;
-
-	//if it contains children, fill the array with their uuids
-	if (containsChildren) {
-		childrenArray = parsingBlock.children.map((item) => {
-			return item[1];
-		});
-	}
-
-	//if variable name has been declared, parse to determine name and value
-	if (namesVariable) {
-		let infoArray = firstLine.split(':=');
-		//take the part of the string before the :=, and remove any [[]] from block references
-		variableName = infoArray[0].replaceAll(bracketsRegex, '');
-		rawVariableName = infoArray[0];
-		rawVariableValue = infoArray[1];
-	}
-
-	//check if it needs to be calced based on containing an operator with a space on either side
-	let containsOperator = operatorRegex.test(rawVariableValue);
-
-	//remove named variables from the string before checking for words
-	let namelessArray = rawVariableValue.replaceAll(nameVariableRegex, "")
-	//remove existing results from string before checking for words
-	let resultlessArray = namelessArray.split("=")[0];
-	//split the string by spaces and see if any items start with a letter as a test for containing a word
-	let wordArray = resultlessArray.split(" ");
-	let containsWord = false;
-
-	//check each item to see if it starts with a letter
-	wordArray.every(item => {
-		let isWord = wordRegex.test(item);
-		let isPageRef = pageRefRegex.test(item);
-		//check to see if word is a trig function
-		let isTrig = trigRegex.test(item);
-		if (isTrig) console.log(`${item} is a trig expression`);
-		//if it's a word and not a trig function, return false
-		if (isWord || isPageRef) {
-			if (isWord) console.log(`${item} is a word!`);
-			if (isPageRef) console.log(`${item} is a Page Ref!`);
-			containsWord = true;
-			return false
-		}
-		return true
-	});
-
-	//If it doesn't contain a word or it does contain ":=", check for variables
-	if (!containsWord || namesVariable) {
-		//check to see if other variables are included in expression
-		variables = await findVariables(rawVariableValue);
-		containsVariables = variables.length !== 0;
-
-		//if it contains variables OR it contains an operator, calculate variable
-		if (containsVariables || containsOperator) {
-			console.log("Shalt be calced");
-			toBeCalced = true;
+			//update tree object values
+			treeObject[block.uuid] = calculatedBlock;
+			treeObject.totalBlocks[i] = calculatedBlock;
+			treeObject.calculatedBlocks.push(calculatedBlock);
 		}
 	}
-	//if it doesn't contain a word and does contain an operator, calculate it
-	if (!containsWord && containsOperator) toBeCalced = true;
-	
-	//always calculate blocks with a ":="
-	if (namesVariable) toBeCalced = true;
+	console.log("nonvariable blocks calculated")
+	console.log(childTreeObject);
+	//calculate blocks containing variables
+	console.log("begin calcing variable blocks");
+	let variableCycle = 0;
+	do {
+		for (let i = 0; i < treeObject.variableBlocks.length; i++) {
+			console.log(treeObject.variableBlocks[i]);
+			let variableBlock = treeObject.variableBlocks[i];
+			let hasBeenCalced = variableBlock.hasBeenCalced;
 
-	let parsedBlock = {
-		uuid: parsingBlock.uuid,
-		rawContent: rawContent.split('\n')[0],
-		calculatedContent: '',
-		value: false,
-		valueStr: '',
-		unit: '',
-		containsChildren: containsChildren,
-		children: childrenArray,
-		rawVariableName: rawVariableName.trim(),
-		variableName: variableName.trim(),
-		rawCalcContent: rawVariableValue.trim(),
-		toBeCalced: toBeCalced,
-		isForeign: isBlockRef,
-		hasBeenCalced: false,
-		containsVariables: containsVariables,
-		variables: variables,
-	};
+			//if the block has been calced, continue on
+			if (hasBeenCalced) continue;
 
-	console.log(parsedBlock);
-	return parsedBlock;
+			let blockUUID = variableBlock.uuid
+			let calculatedBlock = await calcVariableBlock(blockUUID);
+
+			//if there's an error calculating the block, continue on
+			if (!calculatedBlock) continue;
+
+			//otherwise update tree object values
+			treeObject[blockUUID] = calculatedBlock;
+			//THIS MAY OVERRIDE OTHER BLOCKS IF i ISN'T COORDINATED
+			treeObject.totalBlocks[i] = calculatedBlock;
+			treeObject.calculatedBlocks.push(calculatedBlock);
+		}
+		variableCycle = variableCycle + 1;
+
+		//stop after 10 rounds to prevent infinite cycles
+	} while (treeObject.totalBlocks.length > treeObject.calculatedBlocks.length && variableCycle < 10)
+	console.log(childTreeObject);
+	console.log(`========================================\n======= VARIABLE CYCLE COUNT: ${variableCycle} =======\n========================================`);
+	return childTreeObject;
 }
 
-//returns an object with the value of a calculated block
-export function getValue(text) {
-	let resultArray = text.split(":=");
-
-	let result = resultArray[1].trim();
-	if (resultArray.length > 2) {
-		result = resultArray.split("=")[1].trim();
+//update a block's display to display calculated value
+export async function updateBlockDisplay(block) {
+	console.log('begin updateBlockDisplay');
+	let { rawContent, calculatedContent } = block;
+	//if there are no changes, don't update block
+	if (rawContent === calculatedContent) {
+		console.log('no changes');
+		return false;
 	}
-	
+
+	let currentBlock = await logseq.Editor.get_block(block.uuid);
+	//split to modify only first line
+	let currentContentArray = currentBlock.content.split('\n');
+	currentContentArray[0] = calculatedContent;
+	//join the modified array back together
+	let updatedContent = currentContentArray.join('\n');
+
+	//update block display
+	await logseq.Editor.updateBlock(block.uuid, updatedContent);
+	console.log('block updated');
+	return true;
 }
