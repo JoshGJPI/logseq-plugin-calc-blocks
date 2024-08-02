@@ -6,11 +6,13 @@ import {
     bracketsRegex, 
     operatorRegex, 
     nameVariableRegex, 
+	namedUUIDRegex,
     wordRegex, 
     pageRefRegex, 
     trigRegex 
 } from "./regex.js";
 import { unitCancel } from "./helpers.js";
+import { childTreeObject } from "./index.js";
 
 //take raw content of block and convert into info for calcs
 export async function parseBlockInfo(block) {
@@ -203,4 +205,56 @@ export async function calcBlock(rawBlock) {
 	console.log(calculatedBlock);
 
 	return calculatedBlock;
+}
+
+//convert [value](((uuid))) variables back to ${variable name} form
+export async function revertBlock(block) {
+	console.log("Begin revertBlock");
+	console.log(block);
+	//parse rawCalcContent to find uuid variables - remove results after = 
+	let content = block.rawCalcContent.split("=")[0].trim();
+
+	//find all uuid matches
+	let uuidMatches = [...content.matchAll(namedUUIDRegex)];
+	console.log(uuidMatches);
+
+	//get corresponding variable names of all uuid matches
+	let matchedUUIDNames = uuidMatches.map(match => {
+		
+		//get variable name from ChildTreeObject with uuid
+		let uuid = match[2];
+		console.log(uuid);
+		let childTreeInfo = childTreeObject[uuid];
+		console.log(childTreeInfo);
+		let variableName = childTreeInfo.variableName;
+		console.log(variableName);
+		let revertedForm = `\$\{${variableName}\}`;
+
+		let linkedForm = match[0];
+
+		return {
+			uuid: uuid,
+			variableInfo: childTreeInfo,
+			variableName: variableName,
+			linkedForm: linkedForm,
+			revertedForm: revertedForm
+		}
+
+	})
+
+	//change the variable forms in the block's initial content
+	let revertedContent = matchedUUIDNames.reduce((content, item) => {
+		//get linked and reverted form from item
+		let linkedForm = item.linkedForm;
+		let revertedForm = item.revertedForm;
+
+		//replace linked form with reverted form
+		let adjustedContent = content.replace(linkedForm, revertedForm);
+		console.log(content,"\n", adjustedContent);
+		//update content
+		content = adjustedContent;
+		return content
+	}, content)
+
+	console.log(content, revertedContent);
 }

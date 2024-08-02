@@ -1,4 +1,4 @@
-import { calcBlock } from './blockhelpers.js';
+import { calcBlock, revertBlock } from './blockhelpers.js';
 import { calculateTree, updateBlockDisplay } from './helpers.js';
 import { createChildTreeObject } from './uuidhelpers.js';
 
@@ -28,7 +28,7 @@ function resetChildTree() {
 function main() {
 	console.log('=== begin registering slash commands ===');
 
-	//register 'cBlock'
+	//register 'cBlock' to calculate a single block
 	logseq.Editor.registerSlashCommand('cBlock', async () => {
 		//pause before running to allow DB to update with current changes
 		await new Promise((resolve) => setTimeout(resolve, 400));
@@ -46,7 +46,7 @@ function main() {
 		console.log('calcBlock completed');
 	});
 
-	//register 'cTree'
+	//register 'cTree' to calculate a block, all it's children, and any 'linked' blocks
 	logseq.Editor.registerSlashCommand('cTree', async () => {
 		//pause before running to allow DB to update with current changes
 		await new Promise((resolve) => setTimeout(resolve, 400));
@@ -78,6 +78,42 @@ function main() {
 		}
 		console.log(calcedTree)
 		console.log("calculate block tree complete!");
+	});
+
+	//register 'cRevert' to convert [value](((UUID))) back to ${variable name}
+	logseq.Editor.registerSlashCommand('cRevert', async () => {
+		//pause before running to allow DB to update with current changes
+		await new Promise((resolve) => setTimeout(resolve, 400));
+
+		console.log('begin cRevert slash');
+
+		let currentBlock = await logseq.Editor.getCurrentBlock();
+		console.log(currentBlock);
+
+		//reset childTree to avoid old values impacting calcs
+		resetChildTree();
+
+		//cycle through all children and create the tree
+		childTreeObject = await createChildTreeObject(currentBlock.uuid);
+		console.log(childTreeObject);
+		//confirm there are no errors with ChildTreeObject
+		if (childTreeObject === false) {
+			console.log("Error with ChildTreeObject");
+			return false;
+		};
+
+		//revert variable form
+		console.log(childTreeObject);
+		revertBlock(childTreeObject[currentBlock.uuid]);
+		//update display of all blocks
+		// for (let i = 0; i < calcedTree.calculatedBlocks.length; i++) {
+		// 	let block2Update = calcedTree.calculatedBlocks[i];
+		// 	console.log(block2Update);
+		// 	await updateBlockDisplay(block2Update);
+		// 	console.log(block2Update);
+		// }
+		// console.log(calcedTree)
+		// console.log("calculate block tree complete!");
 	});
 
 	console.log("======== CALC-BLOCK PLUGIN READY ========");
