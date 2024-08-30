@@ -25,7 +25,7 @@ export async function parseBlockInfo(block) {
 	//checks to see if the block is a block reference
 	console.log(block.content);
 	let isBlockRef = UUIDRegex.test(block.content);
-	console.log(isBlockRef);
+	console.log("Is a block reference: ", isBlockRef);
 
 	//if block is a block reference, get the block and add to the calcTree
 	if (isBlockRef) {
@@ -211,6 +211,31 @@ export async function calcBlock(rawBlock) {
 export async function revertBlock(block) {
 	console.log("Begin revertBlock");
 	console.log(block);
+
+	//confirm revert can continue
+	let continueRevert = true;
+	let cancelMessage = "";
+	//if block's undefined, stop
+	if (block === undefined) {
+		console.log("rBlock === block is undefined - cancel revert");
+		cancelMessage = `Block is undefined - confirm it isn't a block reference\nRevert Canceled.`
+		continueRevert = false;
+	}
+
+	//if the block's foreign, don't revert
+	let isForeign = block?.isForeign;
+	if (isForeign) {
+		console.log("rBlock === block is foreign - cancel revert");
+		cancelMessage = `Block contains reference to a foreign block\nRevert Canceled.`
+		continueRevert = false;
+	}
+
+	//Notify user revert is canceled
+	if (!continueRevert) {
+		logseq.UI.showMsg(cancelMessage, "error", {timeout: 10000});
+		return false;
+	}
+
 	//parse rawCalcContent to find uuid variables - remove results after = 
 	let content = block.rawCalcContent.split("=")[0].trim();
 
@@ -256,5 +281,9 @@ export async function revertBlock(block) {
 		return content
 	}, content)
 
-	console.log(content, revertedContent);
+	console.log(`${block.variableName} reverted from "${block.rawCalcContent}" to "${block.calculatedContent}"`);
+
+	//add the reverted content to calculatedContent for `updateBlockDisplay`
+	block.calculatedContent = `${block.variableName} := ${revertedContent}`;
+	return block;
 }
