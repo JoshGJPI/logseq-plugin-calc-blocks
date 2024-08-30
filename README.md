@@ -1,8 +1,10 @@
 # Calc Notes Plugin V2.7
-- This will calculate a single block's contents ('cblock') or a block and all of its children's contents ('cTree') and add the result to the end of each calculated block
+- This will calculate a single block's contents ('cblock') or a block and all of its children's contents ('cTree') and add the result to the end of each calculated block. It also supports reverting blocks ('rblock') or block trees (rTree') back from their calculated form for making/testing calculation templates.
 ## Commands
 - **cBlock** - Calculates the value of the current block and updates the block's content to display the result at the end
 - **cTree** - Searches the current block and all children, grandchildren, etc..., calculates their values, and updates displayed content with results. This command supports establishing block variable names to be referenced and used by other blocks
+- **rBlock** - Reverts variables in current block from `[display value](((block uuid)))` form back to `${variable name}`
+- **rTree** - Reverts variables in current block and current block decendants from `[display value](((block uuid)))` form back to `${variable name}`. `((block uuid))` references aren't allowed
 ## Syntax
 - All mathematical operators and expressions must be separated by spaces. There cannot be a space between units and the corresponding number
   - *correct:* ( 30sf + 10sf ) / 2 + 12ft ^ 2
@@ -36,7 +38,7 @@
   - *example defined units:* sample := 20psf \* 10ft (plf) = 200plf
   - **Adding an underscore '_' to a unit will make the result *unitless***
     - *example:* sample := 500lbs * 10 / 100_ = 50
-- Variable names must be defined as a child, grandchild, etc. of the 'current block' used to initiate the **CTree** command. After a variable has been converted into the `[display value](((uuid)))` form, they can look for variable names outside the current block's children/grandchildren
+- Variable names must be defined as a child, grandchild, etc. of the 'current block' used to initiate the **CTree** command. After a variable has been converted into the `[display value](((block uuid)))` form, they can look for variable names outside the current block's children/grandchildren
   - *correct:*
     - Parent block
       - Total Load := ${Dead Load} + ${Live Load} *(references variables of child blocks)*
@@ -52,5 +54,4 @@
       - Total Line Load := ${Total Load} * ${Tributary Area} + 0plf *(references variable in later sibling block)
     - Tributary Area := 10ft
 ## Updates from Previous Version
-- Added support for block references and preventing duplicate variable names
-- Added support to prevent infinite loops from self-referencing variables
+- Added `rBlock` and `rTree` to convert 
