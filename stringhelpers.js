@@ -14,7 +14,6 @@ export async function findVariables(text) {
 	console.log('begin findVariables');
 	//find named variables of form ${variable name}
 	let nameMatches = [...text.matchAll(nameRegex)];
-	console.log(nameMatches, text)
 
 	//find uuid variables of form [variable value](((block uuid)))
 	let uuidMatches = [...text.matchAll(namedUUIDRegex)];
