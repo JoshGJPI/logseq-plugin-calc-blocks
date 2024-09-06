@@ -1,5 +1,5 @@
 //finds form of ${sample text}
-export const nameRegex = /\$\{([^}]+)\}/g;
+export const nameRegex = /\$\{(.*?)\}(?=\s|$)/g;
 //finds form of [text](((block uuid)))
 export const namedUUIDRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
 //finds form of (((block uuid)))
