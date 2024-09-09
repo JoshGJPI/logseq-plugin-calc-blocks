@@ -152,6 +152,7 @@ export function calculateStringValue(text) {
 				console.log(item, trigItem);
 				return trigItem;
 			}
+
 			//check if it's an operator
 			let isOperator = (trimmedOperatorRegex.test(item) && item.length === 1);
 	
@@ -159,6 +160,14 @@ export function calculateStringValue(text) {
 				//convert to ^ to JS native power operator
 				if (item === '^') item = '**';
 				return item;
+			}
+
+			//check if item is Pi
+			let isPi = false
+			if ( item?.toLowerCase() === "pi" || item === "π") isPi = true;
+			if (isPi) {
+				console.log("found Pi(e)!!!");
+				return Math.PI;
 			}
 		}
 
