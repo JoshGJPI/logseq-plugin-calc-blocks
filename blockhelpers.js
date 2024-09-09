@@ -9,7 +9,7 @@ import {
 	namedUUIDRegex,
     wordRegex, 
     pageRefRegex, 
-    trigRegex 
+    trigRegex, 
 } from "./regex.js";
 import { unitCancel } from "./helpers.js";
 import { childTreeObject } from "./index.js";
@@ -84,7 +84,10 @@ export async function parseBlockInfo(block) {
 		let isPageRef = pageRefRegex.test(item);
 		//check to see if word is a trig function
 		let isTrig = trigRegex.test(item);
-		if (isTrig) console.log(`${item} is a trig expression`);
+		if (isTrig) {
+			console.log(`${item} is a trig expression`);
+			return true;
+		}
 		//if it's a word and not a trig function, return false
 		if (isWord || isPageRef) {
 			if (isWord) console.log(`${item} is a word!`);
@@ -172,10 +175,16 @@ export function calculateBlockValue(block) {
 	if (calcBlock.rawVariableName.length > 0)
 		calcedVariableName = `${calcBlock.rawVariableName} := `;
 
-	//if there's no operator, don't add = results to the end of calculatedContent
+	//if there's calculation, don't add = results to the end of calculatedContent
 	let displayedResults = ` = ${resultStr}`;
-	let containsOperator = operatorRegex.test(content);
-	if (!containsOperator) displayedResults = "";
+	let calcedResults = false;
+
+	//if there's an operator or a trig function, add the calculated results to the end
+	if (operatorRegex.test(content)) calcedResults = true;
+	if (trigRegex.test(content)) calcedResults = true;
+
+	//if there's no operator or trig function, don't display calculated result
+	if (!calcedResults) displayedResults = "";
 
 	//update block info after calculation
 	calcBlock.hasBeenCalced = true;

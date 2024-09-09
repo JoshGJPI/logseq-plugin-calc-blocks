@@ -6,7 +6,8 @@ import {
     namedUUIDRegex, 
     startingNumberRegex, 
     unitsRegex, 
-    trimmedOperatorRegex 
+    trimmedOperatorRegex, 
+	trigRegex
 } from './regex.js';
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
@@ -87,6 +88,7 @@ export async function findVariables(text) {
 //break expression string into a number and unit
 export function parseExpressionValues(text) {
 	console.log('begin parseExpressionValues');
+	console.log(text);
 	let expression = text;
 	let numValue = 0;
 
@@ -137,8 +139,19 @@ export function calculateStringValue(text) {
 	let parsedArray = spacelessContentArray.map((item) => {
 		//check to see if input is a number
 		let isNumber = typeof item === "number";
+		let isTrig = trigRegex.test(item);
+		console.log(item, isNumber, isTrig);
 
 		if (!isNumber) {
+			console.log(`${item} isn't a number`);
+			//check if it's a trig function
+			if (isTrig) {
+				//convert it to JS for eval()
+				let trigItem = `Math.${item}`;
+				logseq.UI.showMsg(`${item} is a trig expression\nRemember to convert angle to Radians!`, "Warning", {timeout: 8000});
+				console.log(item, trigItem);
+				return trigItem;
+			}
 			//check if it's an operator
 			let isOperator = (trimmedOperatorRegex.test(item) && item.length === 1);
 	
@@ -168,7 +181,10 @@ export function calculateStringValue(text) {
 
 	//check for errors in parsedArray
 	let parsedError = parsedArray.includes(NaN);
-	if (parsedError) return false;
+	if (parsedError) {
+		console.log("calculateStringValue === parsedArray Error", parsedArray);
+		return false;
+	}
 
 	//rejoin array with spaces
 	let evalString = parsedArray.join(' ');
@@ -187,6 +203,6 @@ export function calculateStringValue(text) {
 		resultNum: resultNum,
 		unitsArray: unitsArray
 	}
-	
+
 	return calcStringObject;
 }

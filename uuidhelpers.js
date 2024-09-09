@@ -1,6 +1,6 @@
 import { childTreeObject } from './index.js';
 import { findVariables, calculateStringValue } from './stringhelpers.js';
-import { operatorRegex, parenthesisRegex } from './regex.js';
+import { operatorRegex, parenthesisRegex, trigRegex } from './regex.js';
 import { getChildBlocks, addToChildTreeObject } from './helpers.js';
 import { parseBlockInfo } from './blockhelpers.js';
 import { unitCancel } from './helpers.js';
@@ -124,8 +124,14 @@ export async function calcVariableBlock(uuid) {
 
 	//if there's no operator, don't add = results to the end of calculatedContent
 	let displayedResults = ` = ${resultStr}`;
-	let containsOperator = operatorRegex.test(parsedCalcContent);
-	if (!containsOperator) displayedResults = "";
+	let calcedResults = false;
+
+	//if there's an operator or a trig function, add the calculated results to the end
+	if (operatorRegex.test(parsedCalcContent)) calcedResults = true;
+	if (trigRegex.test(parsedCalcContent)) calcedResults = true;
+
+	//if there's no operator or trig function, don't display calculated result
+	if (!calcedResults) displayedResults = "";
 
 	//update block info after calculation
 	calcBlock.hasBeenCalced = true;

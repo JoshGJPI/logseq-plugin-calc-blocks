@@ -13,7 +13,7 @@ export const wordRegex = /^[a-zA-Z]/;
 //checks if a string is a block reference - starts and ends with [[ ]]
 export const pageRefRegex = /\[\[(.*)\]\]/;
 //check for trigfunctions
-export const trigRegex = /^[a-z]{3}\(.*?\)/;
+export const trigRegex = /[a-zA-Z]{3}\(/;
 //find text surrounded by ${sample text}
 export const nameVariableRegex = /\${.*?}/g;
 //find numbers at the start of a string
