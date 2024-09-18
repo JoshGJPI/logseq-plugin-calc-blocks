@@ -247,6 +247,7 @@ export async function revertBlock(block) {
 
 	//parse rawCalcContent to find uuid variables - remove results after = 
 	let content = block.rawCalcContent.split("=")[0].trim();
+	let rawVariableName = block.rawContent.split(":=")[0].trim();
 
 	//find all uuid matches
 	let uuidMatches = [...content.matchAll(namedUUIDRegex)];
@@ -293,6 +294,6 @@ export async function revertBlock(block) {
 	console.log(`${block.variableName} reverted from "${block.rawCalcContent}" to "${block.calculatedContent}"`);
 
 	//add the reverted content to calculatedContent for `updateBlockDisplay`
-	block.calculatedContent = `${block.variableName} := ${revertedContent}`;
+	block.calculatedContent = `${rawVariableName} := ${revertedContent}`;
 	return block;
 }

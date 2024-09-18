@@ -164,7 +164,7 @@ export function calculateStringValue(text) {
 
 			//check if item is Pi
 			let isPi = false
-			if ( item?.toLowerCase() === "pi" || item === "π") isPi = true;
+			if (item?.toLowerCase() === "pi" || item === "π") isPi = true;
 			if (isPi) {
 				console.log("found Pi(e)!!!");
 				return Math.PI;
