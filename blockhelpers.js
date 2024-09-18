@@ -247,6 +247,8 @@ export async function revertBlock(block) {
 
 	//parse rawCalcContent to find uuid variables - remove results after = 
 	let content = block.rawCalcContent.split("=")[0].trim();
+
+	//maintain initial variable name to preserve page references
 	let rawVariableName = block.rawContent.split(":=")[0].trim();
 
 	//find all uuid matches
