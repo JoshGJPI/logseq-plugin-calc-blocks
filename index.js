@@ -165,8 +165,10 @@ function main() {
 			let revertedBlock = await revertBlock(childTreeObject[blockUUID]);
 			
 			//if there's an error, don't update
-			if (revertedBlock === false) return false;
-			
+			if (revertedBlock === false) {
+				console.log(`Revert Tree Error ==== `, revertBlock);	
+				return false;
+			}
 			//update block display
 			await updateBlockDisplay(revertedBlock);
 		}
