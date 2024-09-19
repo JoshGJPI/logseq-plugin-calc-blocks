@@ -12,8 +12,10 @@ export const trimmedOperatorRegex = /[+\-*/^()<>?:]/;
 export const wordRegex = /^[a-zA-Z]/;
 //checks if a string is a block reference - starts and ends with [[ ]]
 export const pageRefRegex = /\[\[(.*)\]\]/;
-//check for trigfunctions
+//check for trig functions looking for 3 characters followed by "("
 export const trigRegex = /[a-zA-Z]{3}\(/;
+//check for logarithmic functions looking for "log" followed by 0-2 digits then "("
+export const logRegex = /log\d{0,2}\(/;
 //find text surrounded by ${sample text}
 export const nameVariableRegex = /\${.*?}/g;
 //find numbers at the start of a string

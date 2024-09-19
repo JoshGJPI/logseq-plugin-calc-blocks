@@ -9,7 +9,8 @@ import {
 	namedUUIDRegex,
     wordRegex, 
     pageRefRegex, 
-    trigRegex, 
+    trigRegex,
+	logRegex, 
 } from "./regex.js";
 import { unitCancel } from "./helpers.js";
 import { childTreeObject } from "./index.js";
@@ -84,8 +85,10 @@ export async function parseBlockInfo(block) {
 		let isPageRef = pageRefRegex.test(item);
 		//check to see if word is a trig function
 		let isTrig = trigRegex.test(item);
-		if (isTrig) {
-			console.log(`${item} is a trig expression`);
+		let isLog = logRegex.test(item)
+		if (isTrig || isLog) {
+			let expressionType = isLog ? "log" : "trig";
+			console.log(`${item} is a ${expressionType} expression`);
 			return true;
 		}
 		//if it's a word and not a trig function, return false

@@ -7,7 +7,8 @@ import {
     startingNumberRegex, 
     unitsRegex, 
     trimmedOperatorRegex, 
-	trigRegex
+	trigRegex,
+	logRegex
 } from './regex.js';
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
@@ -140,17 +141,25 @@ export function calculateStringValue(text) {
 		//check to see if input is a number
 		let isNumber = typeof item === "number";
 		let isTrig = trigRegex.test(item);
-		console.log(item, isNumber, isTrig);
+		let isLog = logRegex.test(item)
+		console.log(item, isNumber, isTrig, isLog);
 
 		if (!isNumber) {
 			console.log(`${item} isn't a number`);
 			//check if it's a trig function
-			if (isTrig) {
+			if (isTrig && !isLog) {
 				//convert it to JS for eval()
 				let trigItem = `Math.${item}`;
 				logseq.UI.showMsg(`${item} is a trig expression\nRemember to convert angle to Radians!`, "Warning", {timeout: 8000});
 				console.log(item, trigItem);
 				return trigItem;
+			}
+
+			if (isLog){
+				console.log(`${item} is a log Function`);
+				let logItem = `Math.${item}`;
+				console.log(item, logItem)
+				return logItem;
 			}
 
 			//check if it's an operator
