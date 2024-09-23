@@ -8,7 +8,8 @@ import {
     unitsRegex, 
     trimmedOperatorRegex, 
 	trigRegex,
-	logRegex
+	logRegex,
+	naturalLogRegex,
 } from './regex.js';
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
@@ -139,15 +140,34 @@ export function calculateStringValue(text) {
 	//remove units and convert into array of numbers for calculation
 	let parsedArray = spacelessContentArray.map((item) => {
 		//check to see if input is a number
-		let isNumber = typeof item === "number";
+		let parsedFloat = parseFloat(item);
+		let isNumber = !isNaN(parsedFloat);
 		let isTrig = trigRegex.test(item);
 		let isLog = logRegex.test(item)
-		console.log(item, isNumber, isTrig, isLog);
+		let isNaturalLog = naturalLogRegex.test(item);
+		console.log(item, isNumber, isTrig, isLog, isNaturalLog);
 
 		if (!isNumber) {
 			console.log(`${item} isn't a number`);
+
+			//check if it's a natural Log
+			if (isNaturalLog) {
+				console.log(`${item} is a natural log Function`);
+				let naturalLogItem = "Math.log(";
+				console.log(item, naturalLogItem);
+				return naturalLogItem;
+			}
+
+			//check if it's a numerical log
+			if (isLog){
+				console.log(`${item} is a log Function`);
+				let logItem = item.toLowerCase() === "log(" ? "Math.log10(" : `Math.${item}`;
+				console.log(item, logItem)
+				return logItem;
+			}
+
 			//check if it's a trig function
-			if (isTrig && !isLog) {
+			if (isTrig) {
 				//convert it to JS for eval()
 				let trigItem = `Math.${item}`;
 				logseq.UI.showMsg(`${item} is a trig expression\nRemember to convert angle to Radians!`, "Warning", {timeout: 8000});
@@ -155,15 +175,9 @@ export function calculateStringValue(text) {
 				return trigItem;
 			}
 
-			if (isLog){
-				console.log(`${item} is a log Function`);
-				let logItem = `Math.${item}`;
-				console.log(item, logItem)
-				return logItem;
-			}
-
 			//check if it's an operator
 			let isOperator = (trimmedOperatorRegex.test(item) && item.length === 1);
+			console.log(isOperator, item);
 	
 			if (isOperator) {
 				//convert to ^ to JS native power operator
@@ -207,8 +221,8 @@ export function calculateStringValue(text) {
 	//rejoin array with spaces
 	let evalString = parsedArray.join(' ');
 	console.log(evalString);
-	//calculate block value and prepare text display value - round result to 3 decimal places
-	const roundAmount = 1000;
+	//calculate block value and prepare text display value - round result to 4 decimal places
+	const roundAmount = 10000;
 	let resultNum;
 	try {
 		resultNum = Math.round(eval(evalString)*roundAmount)/roundAmount;

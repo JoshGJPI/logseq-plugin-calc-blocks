@@ -10,9 +10,10 @@ import {
     wordRegex, 
     pageRefRegex, 
     trigRegex,
-	logRegex, 
+	logRegex,
+	naturalLogRegex, 
 } from "./regex.js";
-import { unitCancel } from "./helpers.js";
+import { determineDisplayResults, unitCancel } from "./helpers.js";
 import { childTreeObject } from "./index.js";
 
 //take raw content of block and convert into info for calcs
@@ -20,8 +21,10 @@ export async function parseBlockInfo(block) {
 	console.log('begin parseBlockInfo');
 	console.log(block);
 	//if the block doesn't exist or has no content, stop
-	if (block === undefined || block?.content === "") return false;
-
+	if (block === undefined || block?.content === "") {
+		console.log("parseBlockInfo === empty block");	
+		return false;
+	}
 	let parsingBlock = block;
 	//checks to see if the block is a block reference
 	console.log(block.content);
@@ -40,9 +43,10 @@ export async function parseBlockInfo(block) {
 	let rawContent = parsingBlock.content ? parsingBlock.content : parsingBlock.rawContent
 	//get only first line to avoid block parameters
 	let firstLine = rawContent.split('\n')[0];
-	let containsChildren = parsingBlock.children.length > 0;
+	//check if given/host block has children - this avoids error with foreign blocks
+	let containsChildren = block.children.length > 0;
 	let childrenArray = [];
-
+	console.log(parsingBlock, containsChildren, parsingBlock.children.length);
 	//check to see if a variable has been declared
 	let namesVariable = firstLine.includes(':=');
 	let variableName = '';
@@ -54,7 +58,7 @@ export async function parseBlockInfo(block) {
 
 	//if it contains children, fill the array with their uuids
 	if (containsChildren) {
-		childrenArray = parsingBlock.children.map((item) => {
+		childrenArray = block.children.map((item) => {
 			return item[1];
 		});
 	}
@@ -70,6 +74,8 @@ export async function parseBlockInfo(block) {
 
 	//check if it needs to be calced based on containing an operator with a space on either side
 	let containsOperator = operatorRegex.test(rawVariableValue);
+	let containsTrig = trigRegex.test(rawVariableValue);
+	let containsLog = logRegex.test(rawVariableValue) || naturalLogRegex.test(rawVariableValue);
 
 	//remove named variables from the string before checking for words
 	let namelessArray = rawVariableValue.replaceAll(nameVariableRegex, "")
@@ -80,27 +86,27 @@ export async function parseBlockInfo(block) {
 	let containsWord = false;
 
 	//check each item to see if it starts with a letter
-	wordArray.every(item => {
-		let isWord = wordRegex.test(item);
-		let isPageRef = pageRefRegex.test(item);
+	containsWord = !wordArray.every(item => {
 		//check to see if word is a trig function
 		let isTrig = trigRegex.test(item);
-		let isLog = logRegex.test(item)
+		let isLog = logRegex.test(item) || naturalLogRegex.test(item);
 		if (isTrig || isLog) {
 			let expressionType = isLog ? "log" : "trig";
 			console.log(`${item} is a ${expressionType} expression`);
 			return true;
 		}
 		//if it's a word and not a trig function, return false
+		let isWord = wordRegex.test(item);
+		let isPageRef = pageRefRegex.test(item);
 		if (isWord || isPageRef) {
 			if (isWord) console.log(`${item} is a word!`);
 			if (isPageRef) console.log(`${item} is a Page Ref!`);
-			containsWord = true;
 			return false
 		}
 		return true
 	});
 
+	console.log(resultlessArray, containsWord);
 	//If it doesn't contain a word or it does contain ":=", check for variables
 	if (!containsWord || namesVariable) {
 		//check to see if other variables are included in expression
@@ -113,8 +119,8 @@ export async function parseBlockInfo(block) {
 			toBeCalced = true;
 		}
 	}
-	//if it doesn't contain a word and does contain an operator, calculate it
-	if (!containsWord && containsOperator) toBeCalced = true;
+	//if it doesn't contain a word and does contain an operator/trigfunction/logfunction, calculate it
+	if (!containsWord && ( containsOperator || containsTrig || containsLog )) toBeCalced = true;
 	
 	//always calculate blocks with a ":="
 	if (namesVariable) toBeCalced = true;
@@ -180,11 +186,8 @@ export function calculateBlockValue(block) {
 
 	//if there's calculation, don't add = results to the end of calculatedContent
 	let displayedResults = ` = ${resultStr}`;
-	let calcedResults = false;
-
-	//if there's an operator or a trig function, add the calculated results to the end
-	if (operatorRegex.test(content)) calcedResults = true;
-	if (trigRegex.test(content)) calcedResults = true;
+	//if there's an operator, trig function, or log function, add the calculated results to the end
+	let calcedResults = determineDisplayResults(content);
 
 	//if there's no operator or trig function, don't display calculated result
 	if (!calcedResults) displayedResults = "";

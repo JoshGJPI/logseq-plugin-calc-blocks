@@ -13,9 +13,11 @@ export const wordRegex = /^[a-zA-Z]/;
 //checks if a string is a block reference - starts and ends with [[ ]]
 export const pageRefRegex = /\[\[(.*)\]\]/;
 //check for trig functions looking for 3 characters followed by "("
-export const trigRegex = /[a-zA-Z]{3}\(/;
+export const trigRegex = /(cos)|(sin)|(tan)\(/i;
 //check for logarithmic functions looking for "log" followed by 0-2 digits then "("
-export const logRegex = /log\d{0,2}\(/;
+export const logRegex = /log\d{0,2}\(/i;
+//check for natural log ln(
+export const naturalLogRegex = /ln\(/i;
 //find text surrounded by ${sample text}
 export const nameVariableRegex = /\${.*?}/g;
 //find numbers at the start of a string

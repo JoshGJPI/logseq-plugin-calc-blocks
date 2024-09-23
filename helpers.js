@@ -1,6 +1,7 @@
 import { childTreeObject } from './index.js';
 import { calcBlock } from './blockhelpers.js';
 import { calcVariableBlock } from './uuidhelpers.js';
+import { logRegex, naturalLogRegex, operatorRegex, trigRegex } from './regex.js';
 
 export const unitCancel = "_";
 
@@ -154,4 +155,18 @@ export async function updateBlockDisplay(block) {
 	await logseq.Editor.updateBlock(block.uuid, updatedContent);
 	console.log('block updated');
 	return true;
+}
+
+//determine if a block's calculated value should be added after "=" in the string
+export function determineDisplayResults(resultString) {
+	console.log("begin determineDisplayResults");
+	let displayResults = false;
+	//if there's an operator, display results
+	if (operatorRegex.test(resultString)) displayResults = true;
+	//if there's a trig function, display results
+	if (trigRegex.test(resultString)) displayResults = true;
+	//if there's a log or ln function, display results
+	if (logRegex.test(resultString) || naturalLogRegex.test(resultString)) displayResults = true;
+
+	return displayResults;
 }
