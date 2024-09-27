@@ -34,7 +34,7 @@ export async function parseBlockInfo(block) {
 	//if block is a block reference, get the block and add to the calcTree
 	if (isBlockRef) {
 		let parsingUUID = block.content.slice(2,-2);
-		let foreignBlock = await logseq.Editor.get_block(parsingUUID);
+		let foreignBlock = await logseq.Editor.getBlock(parsingUUID);
 		parsingBlock = foreignBlock;
 		console.log(foreignBlock);
 		console.log("parseBlockInfo === foreign UUID updated")

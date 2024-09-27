@@ -47,7 +47,7 @@ export async function findVariables(text) {
 
 		//if the block isn't defined in the childTreeObject, get it and parse it
 		if (!childTreeObject[uuid]?.variableName) {
-			let foreignBlock = await logseq.Editor.get_block(uuid);
+			let foreignBlock = await logseq.Editor.getBlock(uuid);
 			let foreignParsedBlock = await parseBlockInfo(foreignBlock);
 			let toBeCalced = foreignParsedBlock.toBeCalced;
 

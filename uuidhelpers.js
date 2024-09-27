@@ -144,7 +144,7 @@ export async function calcVariableBlock(uuid) {
 export async function createChildTreeObject(uuid) {
 	console.log('begin CreateChildTreeObject');
 	//get the block of the given uuid
-	let currentBlock = await logseq.Editor.get_block(uuid);
+	let currentBlock = await logseq.Editor.getBlock(uuid);
 	let children = await getChildBlocks(uuid);
 
 	//error boolean used to stop the calc;
@@ -197,7 +197,7 @@ export async function createChildTreeObject(uuid) {
 			//if it has children, push them to the runningArray for the next loop
 			if (children?.length > 0) {
 				for (let j = 0; j < children.length; j++) {
-					let childBlock = await logseq.Editor.get_block(children[j]);
+					let childBlock = await logseq.Editor.getBlock(children[j]);
 					runningArray.push(childBlock);
 				};
 			}
