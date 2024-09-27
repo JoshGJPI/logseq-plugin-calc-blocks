@@ -9,7 +9,7 @@ export const unitCancel = "_";
 export async function getChildBlocks(uuid) {
 	console.log('begin getChildBlocks');
 	//get the block of the given uuid
-	let block = await logseq.Editor.get_block(uuid);
+	let block = await logseq.Editor.getBlock(uuid);
 
 	//check to see if it has children
 	let hasChildren = block.children.length > 0;
@@ -23,7 +23,7 @@ export async function getChildBlocks(uuid) {
 	childBlockArray = await Promise.all(
 		block.children.map(async (item) => {
 			let childUUID = item[1];
-			let childBlock = await logseq.Editor.get_block(childUUID);
+			let childBlock = await logseq.Editor.getBlock(childUUID);
 
 			return childBlock;
 		})
@@ -144,7 +144,7 @@ export async function updateBlockDisplay(block) {
 		return false;
 	}
 
-	let currentBlock = await logseq.Editor.get_block(block.uuid);
+	let currentBlock = await logseq.Editor.getBlock(block.uuid);
 	//split to modify only first line
 	let currentContentArray = currentBlock.content.split('\n');
 	currentContentArray[0] = calculatedContent;
@@ -169,4 +169,84 @@ export function determineDisplayResults(resultString) {
 	if (logRegex.test(resultString) || naturalLogRegex.test(resultString)) displayResults = true;
 
 	return displayResults;
+}
+
+//get current block's parent containing given page reference
+export async function getParentReferenceBlockUUID(reference) {
+	console.log("Begin === getParentReferenceBlock");
+	//get the given reference page
+	let referencePage = await logseq.Editor.getPage(reference);
+	//if error return false
+	if (!referencePage) {
+		logseq.UI.showMsg(`${reference} Page not found`,"error", {timeout: 10000});
+		return false;
+	}
+
+	//get the ID of the reference page for comparison
+	let referenceID = referencePage.id;
+	//if undefined, return false
+	if (!referenceID) {
+		console.log("Reference ID undefined", referencePage);
+		return false;
+	}
+
+	//check if current block contains referencePage in pathRefs
+	let currentBlock = await logseq.Editor.getCurrentBlock();
+	console.log(currentBlock);
+	//get a list of current block pathRefs
+	let currentPathRefs = currentBlock.pathRefs;
+	//check each nested object and compare the id with referenceID
+	let containsReference = currentPathRefs.reduce((total, item) => {
+		//if it's already been found, don't continue the check
+		if (total === true) return total
+
+		//check to see if the item's id equals Design Notes' id
+		let isReference = item.id === referenceID;
+		if (isReference) total = true
+		return total;
+	}, false);
+	console.log(containsReference, currentPathRefs);
+
+	//if current block hasn't inherited given reference, stop search
+	if (!containsReference) {
+		logseq.UI.showMsg(`No Parent contains [[${reference}]]`, "error", {timeout: 10000});
+		return false;
+	}
+
+	//cycle through parents to find given reference
+	let runningParentID = currentBlock.parent.id;
+	console.log(runningParentID);
+	let foundReference = false;
+	let cycleMax = 10;
+	let doCycles = 0;
+	let parentReferenceBlockUUID;
+	do {
+		//get the parent block
+		let parentBlock = await logseq.Editor.getBlock(runningParentID);
+		//if parentBlock is undefined, stop loop
+		if (!parentBlock) break;
+		console.log(parentBlock);
+		//check parent content for reference
+		let parentContent = parentBlock.content;
+		foundReference = parentContent.includes(`[[${reference}]]`);
+		console.log(foundReference);
+		//update runningParentID if reference isn't found
+		if (!foundReference) {
+			runningParentID = parentBlock.parent.id;
+			console.log(runningParentID, parentBlock.id);
+		} else {
+			//if reference is found
+			parentReferenceBlockUUID = parentBlock.uuid;
+		}
+		console.log(runningParentID);
+		doCycles = doCycles + 1;
+	} while (!foundReference && doCycles < cycleMax)
+
+	//if not found, return false
+	if (!parentReferenceBlockUUID) {
+		logseq.UI.showMsg(`[[${reference}]] not found in parent blocks`, "error", {timeout: 10000});
+		console.log(doCycles)
+	} else {
+		return parentReferenceBlockUUID;
+	}
 }
