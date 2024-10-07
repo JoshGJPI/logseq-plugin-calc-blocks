@@ -1,6 +1,7 @@
 import { addToChildTreeObject } from './helpers.js';
 import { childTreeObject } from './index.js';
 import { parseBlockInfo } from './blockhelpers.js';
+import * as math from 'mathjs';
 import { 
     nameRegex, 
     namedUUIDRegex, 
@@ -237,4 +238,12 @@ export function calculateStringValue(text) {
 	}
 
 	return calcStringObject;
+}
+
+//takes a string of values, and uses Mathjs to calculate it with unit conversions
+export function calculateStringValueMJS(text) {
+	console.log("Begin calculateStringValueMJS");
+
+	let result = math.evaluate(text);
+	console.log(text, result);
 }
