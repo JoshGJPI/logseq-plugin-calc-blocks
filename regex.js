@@ -24,9 +24,15 @@ export const nameVariableRegex = /\${.*?}/g;
 export const startingNumberRegex = /^[\d\.]+/;
 //include "_" to check for unit canceler
 export const unitsRegex = /[a-zA-Z_%]+.*/;
+//check for conversion unit in ()
+export const unitParenthesisRegex = /\(([a-zA-Z/0-9\-]+)\)/;
 //find all brackets [ ] in a string
 export const bracketsRegex = /[\[\]]*/g;
 //find all parenthesis ( ) in a string
 export const parenthesisRegex = /[()]/g;
 //check if a string starts and ends with ()
 export const surroundingParenthesisRegex = /^\([^)]+\)$/;
+//check if a string contains a non-numeric value
+export const nonNumberRegex = /[a-zA-z/\^]/;
+//check for invalid MathJS unit characters
+export const invalidMJSUnitRegex = /(?<=\w)-(?=\w)/g;

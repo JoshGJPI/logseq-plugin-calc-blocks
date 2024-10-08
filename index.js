@@ -1,5 +1,5 @@
 import { calcBlock, calcBlockMJS, revertBlock } from './blockhelpers.js';
-import { calculateTree, getParentReferenceBlockUUID, updateBlockDisplay } from './helpers.js';
+import { calculateTree, getParentReferenceBlockUUID, setupMathJSUnits, updateBlockDisplay } from './helpers.js';
 import { createChildTreeObject } from './uuidhelpers.js';
 
 //initialize default childTreeObject to store global calc information
@@ -9,6 +9,9 @@ export let childTreeObject = {
 	variableBlocks: [],
 	totalBlocks: [],
 };
+
+//initate custom Units
+setupMathJSUnits();
 
 //resets child tree to default values
 function resetChildTree() {
@@ -51,7 +54,7 @@ function main() {
 			//pause before running to allow DB to update with current changes
 			await new Promise((resolve) => setTimeout(resolve, 400));
 	
-			console.log('begin cBlock slash');
+			console.log('begin cMJSBlock slash');
 	
 			//get the current block
 			let currentBlock = await logseq.Editor.getCurrentBlock();

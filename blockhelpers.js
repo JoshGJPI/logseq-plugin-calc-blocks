@@ -219,40 +219,30 @@ export function calculateBlockValueMJS(block) {
 		throw `error at ${content}`;
 	}
 
-	// //parse calc results
-	// let {resultNum, unitsArray} = calcedString
-	// let resultStr = `${resultNum}`;
+	//parse calc results
+	let {resultNum, unit} = calcedString
+	let resultStr = `${resultNum}${unit}`;
 
-	// //if the values had units, assume the last one is the resultant unit (for now)
-	// if (unitsArray.length > 0) {
-	// 	//if unit canceler is included, don't include unit in result
-	// 	let includesCanceler = unitsArray.includes(unitCancel);
-	// 	//remove parenthesis from units
-	// 	let resultUnit = includesCanceler ? "" : unitsArray[unitsArray.length - 1].replace(parenthesisRegex,"");
-	// 	resultStr = `${resultStr}${resultUnit}`;
-	// 	calcBlock.unit = resultUnit;
-	// }
+	//only add := if a variable name is defined
+	let calcedVariableName = '';
+	if (calcBlock.rawVariableName.length > 0)
+		calcedVariableName = `${calcBlock.rawVariableName} := `;
 
-	// //only add := if a variable name is defined
-	// let calcedVariableName = '';
-	// if (calcBlock.rawVariableName.length > 0)
-	// 	calcedVariableName = `${calcBlock.rawVariableName} := `;
+	//if there's calculation, add = results to the end of calculatedContent
+	let displayedResults = ` = ${resultStr}`;
+	//if there's an operator, trig function, or log function, add the calculated results to the end
+	let calcedResults = determineDisplayResults(content);
 
-	// //if there's calculation, don't add = results to the end of calculatedContent
-	// let displayedResults = ` = ${resultStr}`;
-	// //if there's an operator, trig function, or log function, add the calculated results to the end
-	// let calcedResults = determineDisplayResults(content);
+	//if there's no operator or trig function, don't display calculated result
+	if (!calcedResults) displayedResults = "";
 
-	// //if there's no operator or trig function, don't display calculated result
-	// if (!calcedResults) displayedResults = "";
+	//update block info after calculation
+	calcBlock.hasBeenCalced = true;
+	calcBlock.value = resultNum;
+	calcBlock.valueStr = resultStr;
+	calcBlock.calculatedContent = `${calcedVariableName}${content}${displayedResults}`;
 
-	// //update block info after calculation
-	// calcBlock.hasBeenCalced = true;
-	// calcBlock.value = resultNum;
-	// calcBlock.valueStr = resultStr;
-	// calcBlock.calculatedContent = `${calcedVariableName}${content}${displayedResults}`;
-
-	// return calcBlock;
+	return calcBlock;
 }
 //calculate block without variables
 export async function calcBlock(rawBlock) {

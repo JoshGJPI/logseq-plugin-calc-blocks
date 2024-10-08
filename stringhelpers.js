@@ -1,7 +1,6 @@
-import { addToChildTreeObject } from './helpers.js';
+import { addToChildTreeObject, formattedEvaluate } from './helpers.js';
 import { childTreeObject } from './index.js';
 import { parseBlockInfo } from './blockhelpers.js';
-import * as math from 'mathjs';
 import { 
     nameRegex, 
     namedUUIDRegex, 
@@ -11,6 +10,8 @@ import {
 	trigRegex,
 	logRegex,
 	naturalLogRegex,
+	unitParenthesisRegex,
+	nonNumberRegex,
 } from './regex.js';
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
@@ -242,8 +243,53 @@ export function calculateStringValue(text) {
 
 //takes a string of values, and uses Mathjs to calculate it with unit conversions
 export function calculateStringValueMJS(text) {
-	console.log("Begin calculateStringValueMJS");
+	console.log("Begin calculateStringValueMJS", text);
+	let textToCalc = text;
+	let resultUnit = "";
 
-	let result = math.evaluate(text);
-	console.log(text, result);
+	//check for desired unit output
+	let splitText = text.split(" ");
+	//split the string by spaces and take the last value
+	let lastItem = splitText[splitText.length - 1];
+	//check if the last value is a unit surrounded in ()
+	let isConversion = lastItem.match(unitParenthesisRegex);
+	console.log(isConversion, lastItem.match(unitParenthesisRegex));
+
+	//if it is a unit, convert to MathJS format
+	if (isConversion) {
+		//set result unit as user input unit
+		resultUnit = isConversion[1];
+		//remove "-" from units before parsing
+		let unitConversion = `to ${isConversion[1]}`;
+		//join all elements except the last one and add the adjusted unit conversion to the end
+		textToCalc = `${splitText.slice(0,-1).join(" ")} ${unitConversion}`;
+	}
+
+	//run the calc
+	let result = formattedEvaluate(textToCalc);
+	console.log(text, textToCalc, result);
+
+	//check if it has a unit in the result to split out
+	let containsUnit = result.match(nonNumberRegex);
+
+	if (containsUnit) {
+		//identify where the unit starts
+		let unitIndex = containsUnit.index;
+		//slice out the number and convert to number
+		let resultNumber = parseFloat(result.slice(0, unitIndex));
+		//if resulting unit isn't defined by (unit), slice it from result
+		if (!isConversion) resultUnit = result.slice(unitIndex);
+
+		//return parsed results
+		return {
+			resultNum: resultNumber,
+			unit: resultUnit
+		}
+	}
+
+	//if no unit, return parsed number result
+	return {
+		resultNum: parseFloat(result),
+		unit: resultUnit
+	}
 }
