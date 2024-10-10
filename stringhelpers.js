@@ -1,4 +1,5 @@
-import { addToChildTreeObject, formattedEvaluate } from './helpers.js';
+import { addToChildTreeObject } from './helpers.js';
+import { formattedEvaluate } from './mathjshelpers.js';
 import { childTreeObject } from './index.js';
 import { parseBlockInfo } from './blockhelpers.js';
 import { 
@@ -259,26 +260,27 @@ export function calculateStringValueMJS(text) {
 	if (isConversion) {
 		//set result unit as user input unit
 		resultUnit = isConversion[1];
-		//remove "-" from units before parsing
-		let unitConversion = `to ${isConversion[1]}`;
-		//join all elements except the last one and add the adjusted unit conversion to the end
-		textToCalc = `${splitText.slice(0,-1).join(" ")} ${unitConversion}`;
+		//join all elements except the last one
+		textToCalc = splitText.slice(0,-1).join(" ");
 	}
 
 	//run the calc
-	let result = formattedEvaluate(textToCalc);
-	console.log(text, textToCalc, result);
+	let {formattedResult} = formattedEvaluate(textToCalc);
+	console.log(text, textToCalc, formattedResult);
 
 	//check if it has a unit in the result to split out
-	let containsUnit = result.match(nonNumberRegex);
+	let containsUnit = formattedResult.match(nonNumberRegex);
 
 	if (containsUnit) {
 		//identify where the unit starts
 		let unitIndex = containsUnit.index;
-		//slice out the number and convert to number
-		let resultNumber = parseFloat(result.slice(0, unitIndex));
 		//if resulting unit isn't defined by (unit), slice it from result
-		if (!isConversion) resultUnit = result.slice(unitIndex);
+		if (!isConversion) resultUnit = formattedResult.slice(unitIndex);
+		
+		//convert result to desired unit
+		let convertedResult = formattedEvaluate(`${formattedResult} to ${resultUnit}`).formattedResult;
+		//slice out the number and convert to number
+		let resultNumber = parseFloat(convertedResult.slice(0, unitIndex));
 
 		//return parsed results
 		return {

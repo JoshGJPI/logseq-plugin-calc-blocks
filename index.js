@@ -1,5 +1,6 @@
 import { calcBlock, calcBlockMJS, revertBlock } from './blockhelpers.js';
-import { calculateTree, getParentReferenceBlockUUID, setupMathJSUnits, updateBlockDisplay } from './helpers.js';
+import { calculateTree, getParentReferenceBlockUUID, updateBlockDisplay } from './helpers.js';
+import { setupMathJSUnits } from './mathjshelpers.js';
 import { createChildTreeObject } from './uuidhelpers.js';
 
 //initialize default childTreeObject to store global calc information
