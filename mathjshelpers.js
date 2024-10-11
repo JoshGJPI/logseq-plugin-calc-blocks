@@ -1,5 +1,8 @@
-import { invalidMJSUnitRegex } from "./regex.js";
+import { exponentExpressionRegex, invalidMJSUnitRegex } from "./regex.js";
 import { BASE_UNIT_ARRAY, UNIT_PREFERENCES, UNIT_SYSTEMS } from "./constants.js";
+import { calcBlockMJS } from "./blockhelpers.js";
+import { childTreeObject } from "./index.js";
+import { calcVariableBlockMJS } from "./uuidhelpers.js";
 
 //determine the type of unit from a MathJS result
 export function getResultUnitType(dimensionArray) {
@@ -82,8 +85,10 @@ export function formattedEvaluate(text, preferredUnit = '') {
 			}
 		}
 
+	  let processedText = cleanedText.replaceAll(exponentExpressionRegex, '($1$2)$3$4')
+		console.log(processedText, cleanedText);
 	  // Evaluate the expression using MathJS
-	  let rawResult = math.evaluate(cleanedText);
+	  let rawResult = math.evaluate(processedText);
 	  console.log(rawResult);
 	  // Determine the type of unit from the result's dimensions
 	  const unitType = getResultUnitType(rawResult.dimensions);
@@ -161,7 +166,59 @@ export function formattedEvaluate(text, preferredUnit = '') {
 	  console.error(error);
 	  throw error;
 	}
-  }
+}
+
+//calculate tree of blocks for cTree
+export async function calculateTreeMJS(object) {
+	console.log('begin CalculateTree');
+	console.log(object);
+	let treeObject = object;
+	for (let i = 0; i < treeObject.totalBlocks.length; i++) {
+		//setup all block values without variables first
+		let block = treeObject.totalBlocks[i];
+		if (!block.containsVariables) {
+			let calculatedBlock = await calcBlockMJS(block);
+
+			//update tree object values
+			treeObject[block.uuid] = calculatedBlock;
+			treeObject.totalBlocks[i] = calculatedBlock;
+			treeObject.calculatedBlocks.push(calculatedBlock);
+		}
+	}
+	console.log("nonvariable blocks calculated")
+	console.log(childTreeObject);
+	//calculate blocks containing variables
+	console.log("begin calcing variable blocks");
+	let variableCycle = 0;
+	do {
+		for (let i = 0; i < treeObject.variableBlocks.length; i++) {
+			console.log(treeObject.variableBlocks[i]);
+			let variableBlock = treeObject.variableBlocks[i];
+			let hasBeenCalced = variableBlock.hasBeenCalced;
+
+			//if the block has been calced, continue on
+			if (hasBeenCalced) continue;
+
+			let blockUUID = variableBlock.uuid
+			let calculatedBlock = await calcVariableBlockMJS(blockUUID);
+
+			//if there's an error calculating the block, continue on
+			if (!calculatedBlock) continue;
+
+			//otherwise update tree object values
+			treeObject[blockUUID] = calculatedBlock;
+			//THIS MAY OVERRIDE OTHER BLOCKS IF i ISN'T COORDINATED
+			treeObject.totalBlocks[i] = calculatedBlock;
+			treeObject.calculatedBlocks.push(calculatedBlock);
+		}
+		variableCycle = variableCycle + 1;
+
+		//stop after 10 rounds to prevent infinite cycles
+	} while (treeObject.totalBlocks.length > treeObject.calculatedBlocks.length && variableCycle < 10)
+	console.log(childTreeObject);
+	console.log(`========================================\n======= VARIABLE CYCLE COUNT: ${variableCycle} =======\n========================================`);
+	return childTreeObject;
+}
 
 //establish custom Mathjs units
 export function setupMathJSUnits() {

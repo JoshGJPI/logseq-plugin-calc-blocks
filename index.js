@@ -1,6 +1,6 @@
 import { calcBlock, calcBlockMJS, revertBlock } from './blockhelpers.js';
 import { calculateTree, getParentReferenceBlockUUID, updateBlockDisplay } from './helpers.js';
-import { setupMathJSUnits } from './mathjshelpers.js';
+import { calculateTreeMJS, setupMathJSUnits } from './mathjshelpers.js';
 import { createChildTreeObject } from './uuidhelpers.js';
 
 //initialize default childTreeObject to store global calc information
@@ -50,12 +50,12 @@ function main() {
 		console.log('calcBlock completed');
 	});
 
-	//register 'cMJSBlock' to calculate a single block
-	logseq.Editor.registerSlashCommand('cMJSBlock', async () => {
+	//register 'cMBlock' to calculate a single block
+	logseq.Editor.registerSlashCommand('cMBlock', async () => {
 		//pause before running to allow DB to update with current changes
 		await new Promise((resolve) => setTimeout(resolve, 400));
 
-		console.log('begin cMJSBlock slash');
+		console.log('begin cMBlock slash');
 
 		//get the current block
 		let currentBlock = await logseq.Editor.getCurrentBlock();
@@ -65,7 +65,7 @@ function main() {
 
 		//update current block
 		await updateBlockDisplay(calculatedBlock);
-		console.log('calcMJSBlock completed');
+		console.log('calcMBlock completed');
 	});
 
 	//register 'cTree' to calculate a block, all it's children, and any 'linked' blocks
@@ -101,6 +101,41 @@ function main() {
 		console.log(calcedTree)
 		console.log("calculate block tree complete!");
 	});
+
+	//register 'cTree' to calculate a block, all it's children, and any 'linked' blocks
+	logseq.Editor.registerSlashCommand('cMTree', async () => {
+		//pause before running to allow DB to update with current changes
+		await new Promise((resolve) => setTimeout(resolve, 400));
+
+		console.log('begin cMTree slash');
+
+		let currentBlock = await logseq.Editor.getCurrentBlock();
+		console.log(currentBlock);
+
+		//reset childTree to avoid old values impacting calcs
+		resetChildTree();
+
+		//cycle through all children and create the tree
+		childTreeObject = await createChildTreeObject(currentBlock.uuid);
+		console.log(childTreeObject);
+		//calculate all items of the tree
+		if (childTreeObject === false) {
+			console.log("Error with ChildTreeObject");
+			return false;
+		};
+		let calcedTree = await calculateTreeMJS(childTreeObject);
+		console.log(calcedTree);
+		//update display of all blocks
+		for (let i = 0; i < calcedTree.calculatedBlocks.length; i++) {
+			let block2Update = calcedTree.calculatedBlocks[i];
+			console.log(block2Update);
+			await updateBlockDisplay(block2Update);
+			console.log(block2Update);
+		}
+		console.log(calcedTree)
+		console.log("cMTree complete!");
+	});
+
 
 	//register 'cDNotes' to calculate a block, all it's children, and any 'linked' blocks
 	logseq.Editor.registerSlashCommand('cDNotes', async () => {

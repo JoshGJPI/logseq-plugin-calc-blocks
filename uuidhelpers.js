@@ -1,5 +1,5 @@
 import { childTreeObject } from './index.js';
-import { findVariables, calculateStringValue } from './stringhelpers.js';
+import { findVariables, calculateStringValue, calculateStringValueMJS } from './stringhelpers.js';
 import { logRegex, naturalLogRegex, operatorRegex, parenthesisRegex, trigRegex } from './regex.js';
 import { getChildBlocks, addToChildTreeObject, determineDisplayResults } from './helpers.js';
 import { parseBlockInfo } from './blockhelpers.js';
@@ -134,6 +134,95 @@ export async function calcVariableBlock(uuid) {
 	calcBlock.hasBeenCalced = true;
 	calcBlock.value = resultNum;
 	calcBlock.valueStr = resultStr;
+	calcBlock.calculatedContent = `${calcedVariableName}${linkContent}${displayedResults}`;
+
+	console.log(calcBlock);
+	return calcBlock;
+}
+
+//calculate a block containing variable(s) using Mathjs unit conversions
+export async function calcVariableBlockMJS(uuid) {
+	console.log("begin calcVariableBlockMJS");
+	let calcBlock = childTreeObject[uuid];
+	let { rawCalcContent, rawContent } = calcBlock;
+
+	// Find the variables in the block content
+	let variables = await findVariables(rawCalcContent);
+	console.log(variables);
+
+	if (variables === false) return false;
+
+	let allVariablesCalced = true;
+	// Parse the variables for block calculation
+	let calculatedVariables = variables.map(item => {
+		let variableName = item.name;
+		let variableObject = childTreeObject.variables[variableName];
+		console.log(variableObject);
+
+		if (variableObject === undefined) {
+			logseq.UI.showMsg(`variable "${variableName}" hasn't been defined at: "${calcBlock.rawContent}"\nCheck variable definitions for spelling errors`, "error", {timeout: 20000});
+			allVariablesCalced = false;
+			return null;
+		}
+
+		let variableUUID = variableObject.uuid;
+		let { hasBeenCalced, unit, value, valueStr } = childTreeObject[variableUUID];
+
+		if (!hasBeenCalced) {
+			console.log(`${variableName} hasn't been calced`);
+			allVariablesCalced = false;
+			return null;
+		}
+
+		let referenceText = `[${valueStr}](((${variableUUID})))`;
+		return {
+			...item,
+			value: value,
+			unit: unit, 
+			valueStr: valueStr,
+			uuid: variableUUID,
+			referenceText: referenceText
+		};
+	}).filter(item => item !== null);
+
+	if (!allVariablesCalced) {
+		console.log("not all variables calced");
+		return false;
+	}
+
+	console.log(calculatedVariables);
+
+	// Remove any pre-existing results in calc string
+	let parsedCalcContent = rawCalcContent.split("=")[0].trim();
+
+	// Replace variable info with number values for calculation
+	let runningEvalString = parsedCalcContent;
+	for (let variable of calculatedVariables) {
+		runningEvalString = runningEvalString.replace(variable.rawValue, variable.valueStr);
+	}
+
+	// Calculate using MathJS
+	console.log(runningEvalString);
+	let { resultNum, unit, unitType } = calculateStringValueMJS(runningEvalString);
+
+	// Only add := if a variable name is defined
+	let calcedVariableName = calcBlock.rawVariableName.length > 0 ? `${calcBlock.rawVariableName} := ` : '';
+
+	// Replace variables with link content
+	let linkContent = parsedCalcContent;
+	calculatedVariables.forEach(item => {
+		linkContent = linkContent.replace(item.rawValue, item.referenceText);
+	});
+
+	// Determine if results should be displayed
+	let displayedResults = determineDisplayResults(parsedCalcContent) ? ` = ${resultNum}${unit}` : "";
+
+	// Update block info after calculation
+	calcBlock.hasBeenCalced = true;
+	calcBlock.value = resultNum;
+	calcBlock.unit = unit;
+	calcBlock.unitType = unitType;
+	calcBlock.valueStr = `${resultNum}${unit}`;
 	calcBlock.calculatedContent = `${calcedVariableName}${linkContent}${displayedResults}`;
 
 	console.log(calcBlock);
