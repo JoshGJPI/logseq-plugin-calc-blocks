@@ -28,13 +28,27 @@ export const BASE_UNIT_ARRAY = [
     ["BIT", [0, 0, 0, 0, 0, 0, 0, 0, 1]]
   ];
 
-//an object determining the default units for each base unit
-export const DEFAULT_UNITS = {
-    LENGTH: "ft",
-    FORCE: "lb",
-    UNIFORM_LOAD: "plf",
-    SURFACE: "sf",
-    VOLUME: "cf",
-    MOMENT: "lbft",
-    PRESSURE: "psi"
-}
+// Preference order for units of different types
+export const UNIT_PREFERENCES = {
+  LENGTH: ['ft', 'in', 'm', 'mm'],
+  FORCE: ['lb', 'kip', 'N', 'kN'],
+  UNIFORM_LOAD: ['plf', 'klf', 'N/m', 'kN/m'],
+  SURFACE: ['sf', 'sqin', 'm^2'],
+  VOLUME: ['cuft', 'cuin', 'm^3'],
+  MOMENT: ['lb*ft', 'kip*ft', 'lb*in', 'kip*in', 'N*m', 'kN*m'],
+  PRESSURE: ['psf', 'ksf', 'psi', 'ksi', 'Pa', 'kPa']
+};
+
+// Grouping of units by system (US or Metric)
+export const UNIT_SYSTEMS = {
+  US: {
+    LENGTH: ['ft', 'in'],
+    FORCE: ['lb', 'kip'],
+    MOMENT: ['lb*ft', 'kip*ft', 'lb*in', 'kip*in'],
+  },
+  METRIC: {
+    LENGTH: ['m', 'mm'],
+    FORCE: ['N', 'kN'],
+    MOMENT: ['N*m', 'kN*m'],
+  }
+};

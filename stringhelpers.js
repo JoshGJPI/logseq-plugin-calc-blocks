@@ -242,56 +242,44 @@ export function calculateStringValue(text) {
 	return calcStringObject;
 }
 
-//takes a string of values, and uses Mathjs to calculate it with unit conversions
+// Calculate string value using MathJS
 export function calculateStringValueMJS(text) {
 	console.log("Begin calculateStringValueMJS", text);
 	let textToCalc = text;
 	let resultUnit = "";
-
-	//check for desired unit output
+  
+	// Check for desired unit output
 	let splitText = text.split(" ");
-	//split the string by spaces and take the last value
 	let lastItem = splitText[splitText.length - 1];
-	//check if the last value is a unit surrounded in ()
 	let isConversion = lastItem.match(unitParenthesisRegex);
-	console.log(isConversion, lastItem.match(unitParenthesisRegex));
-
-	//if it is a unit, convert to MathJS format
+  
+	// If a specific result unit is requested, extract it and remove from calculation text
 	if (isConversion) {
-		//set result unit as user input unit
-		resultUnit = isConversion[1];
-		//join all elements except the last one
-		textToCalc = splitText.slice(0,-1).join(" ");
+	  resultUnit = isConversion[1];
+	  textToCalc = splitText.slice(0, -1).join(" ");
 	}
+  
+	// Evaluate the expression using MathJS
+	const { formattedResult, rawResult, rawResultUnit } = formattedEvaluate(textToCalc, resultUnit);
+	
+	//if there's no conversion, update resultUnit to outputted result
+	if (!isConversion) {
+		let unitIndex = formattedResult.match(nonNumberRegex).index;
+		resultUnit = formattedResult.slice(unitIndex);
 
-	//run the calc
-	let {formattedResult} = formattedEvaluate(textToCalc);
-	console.log(text, textToCalc, formattedResult);
-
-	//check if it has a unit in the result to split out
-	let containsUnit = formattedResult.match(nonNumberRegex);
-
-	if (containsUnit) {
-		//identify where the unit starts
-		let unitIndex = containsUnit.index;
-		//if resulting unit isn't defined by (unit), slice it from result
-		if (!isConversion) resultUnit = formattedResult.slice(unitIndex);
-		
-		//convert result to desired unit
-		let convertedResult = formattedEvaluate(`${formattedResult} to ${resultUnit}`).formattedResult;
-		//slice out the number and convert to number
-		let resultNumber = parseFloat(convertedResult.slice(0, unitIndex));
-
-		//return parsed results
-		return {
-			resultNum: resultNumber,
-			unit: resultUnit
+		console.log(resultUnit);
+		//add "-" to MOMENT results
+		if(rawResultUnit === "MOMENT") {
+			resultUnit = resultUnit.replaceAll(" ", "-");
+			console.log("Moment found!: ", resultUnit);
 		}
 	}
+	console.log(formattedResult, rawResult, rawResultUnit, resultUnit);
 
-	//if no unit, return parsed number result
+	// Parse the result and return
 	return {
-		resultNum: parseFloat(result),
-		unit: resultUnit
-	}
-}
+	  resultNum: parseFloat(formattedResult),
+	  unit: resultUnit,
+	  unitType: rawResultUnit
+	};
+  }

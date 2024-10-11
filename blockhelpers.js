@@ -205,41 +205,48 @@ export function calculateBlockValue(block) {
 export function calculateBlockValueMJS(block) {
 	
 	console.log('begin calculateBlockValue');
-
 	let calcBlock = block;
 
 	//only get the content to be calculated (before the = sign)
 	let content = calcBlock.rawCalcContent.split('=')[0].trim();
-	//calculate the value of the block
-	let calcedString = calculateStringValueMJS(content);
 
-	//check if there's an error in the string calculation
-	if (calcedString === false) {
-		logseq.UI.showMsg(`error at "${content}"`, "error", {timeout: 20000});
-		throw `error at ${content}`;
+
+	//calculate the value of the block
+	let calcedString;
+	//confirm there's no error with calcedString calculation
+	try {
+		calcedString = calculateStringValueMJS(content);
+	} catch (error) {
+		logseq.UI.showMsg(`Error calculating "${content}"\n${error}`, "error", {timeout: 20000});
+		console.error(`Error in calcBlockValueMJS: ${error}`);
+		return false;
+	}
+
+	// Check if there's an error in the string calculation
+	if (!calcedString || calcedString.resultNum === undefined) {
+		logseq.UI.showMsg(`Error calculating "${content}"`, "error", {timeout: 20000});
+		console.error(`Invalid result from calculateStringValueMJS for "${content}"`);
+		return false;
 	}
 
 	//parse calc results
-	let {resultNum, unit} = calcedString
-	let resultStr = `${resultNum}${unit}`;
+	let { resultNum, unit, unitType } = calcedString;
 
 	//only add := if a variable name is defined
 	let calcedVariableName = '';
-	if (calcBlock.rawVariableName.length > 0)
+	if (calcBlock.rawVariableName.length > 0) {
 		calcedVariableName = `${calcBlock.rawVariableName} := `;
+	}
 
-	//if there's calculation, add = results to the end of calculatedContent
-	let displayedResults = ` = ${resultStr}`;
-	//if there's an operator, trig function, or log function, add the calculated results to the end
-	let calcedResults = determineDisplayResults(content);
-
-	//if there's no operator or trig function, don't display calculated result
-	if (!calcedResults) displayedResults = "";
+	//if there's an operator, trig function, or log function, add = results to the end of calculatedContent
+	let displayedResults = determineDisplayResults(content) ? ` = ${resultNum}${unit}` : "";
 
 	//update block info after calculation
 	calcBlock.hasBeenCalced = true;
 	calcBlock.value = resultNum;
-	calcBlock.valueStr = resultStr;
+	calcBlock.unit = unit;
+	calcBlock.unitType = unitType;
+	calcBlock.valueStr = `${resultNum}${unit}`;
 	calcBlock.calculatedContent = `${calcedVariableName}${content}${displayedResults}`;
 
 	return calcBlock;
@@ -268,20 +275,24 @@ export async function calcBlock(rawBlock) {
 //calculate block without variables using Mathjs
 export async function calcBlockMJS(rawBlock) {
 	console.log('begin calcBlockMJS');
-	//get the current block
 	let block = rawBlock;
-	//parse it and prep info for calculation
+	//parse and prep info for calculation
 	let parsedBlock = await parseBlockInfo(block);
 
 	//if the block doesn't contain calcable content or is undefined, return false
-	let calculateBlock = parsedBlock?.toBeCalced;
-	if (!parsedBlock || !calculateBlock) {
+	if (!parsedBlock || !parsedBlock?.toBeCalced) {
 		console.log('no items to calculate');
 		return false;
 	}
 	//calculate block expression results and prep text display
 	let calculatedBlock = calculateBlockValueMJS(parsedBlock);
 	console.log(calculatedBlock);
+
+	// If calculation failed, return false
+	if (calculatedBlock === false) {
+	console.log('calculation failed');
+	return false;
+	}
 
 	return calculatedBlock;
 }

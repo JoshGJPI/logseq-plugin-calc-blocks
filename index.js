@@ -50,23 +50,23 @@ function main() {
 		console.log('calcBlock completed');
 	});
 
-		//register 'cMJSBlock' to calculate a single block
-		logseq.Editor.registerSlashCommand('cMJSBlock', async () => {
-			//pause before running to allow DB to update with current changes
-			await new Promise((resolve) => setTimeout(resolve, 400));
-	
-			console.log('begin cMJSBlock slash');
-	
-			//get the current block
-			let currentBlock = await logseq.Editor.getCurrentBlock();
-			console.log(currentBlock);
-			//calculate block contents
-			let calculatedBlock = await calcBlockMJS(currentBlock);
-	
-			//update current block
-			await updateBlockDisplay(calculatedBlock);
-			console.log('calcBlock completed');
-		});
+	//register 'cMJSBlock' to calculate a single block
+	logseq.Editor.registerSlashCommand('cMJSBlock', async () => {
+		//pause before running to allow DB to update with current changes
+		await new Promise((resolve) => setTimeout(resolve, 400));
+
+		console.log('begin cMJSBlock slash');
+
+		//get the current block
+		let currentBlock = await logseq.Editor.getCurrentBlock();
+		console.log(currentBlock);
+		//calculate block contents
+		let calculatedBlock = await calcBlockMJS(currentBlock);
+
+		//update current block
+		await updateBlockDisplay(calculatedBlock);
+		console.log('calcMJSBlock completed');
+	});
 
 	//register 'cTree' to calculate a block, all it's children, and any 'linked' blocks
 	logseq.Editor.registerSlashCommand('cTree', async () => {
