@@ -1,4 +1,4 @@
-import { addToChildTreeObject } from './helpers.js';
+import { addToChildTreeObject, getExpressionUnit } from './helpers.js';
 import { formattedEvaluate } from './mathjshelpers.js';
 import { childTreeObject } from './index.js';
 import { parseBlockInfo } from './blockhelpers.js';
@@ -12,7 +12,6 @@ import {
 	logRegex,
 	naturalLogRegex,
 	unitParenthesisRegex,
-	nonNumberRegex,
 } from './regex.js';
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
@@ -262,11 +261,9 @@ export function calculateStringValueMJS(text) {
 	// Evaluate the expression using MathJS
 	const { formattedResult, rawResult, rawResultUnit } = formattedEvaluate(textToCalc, resultUnit);
 	
-	//if there's no conversion, update resultUnit to outputted result
-	if (!isConversion) {
-		let unitIndex = formattedResult.match(nonNumberRegex).index;
-		resultUnit = formattedResult.slice(unitIndex);
-
+	//if there's no conversion and there IS a rawResultUnit, update resultUnit to outputted result
+	if (!isConversion && rawResultUnit !== "") {
+		resultUnit = getExpressionUnit(formattedResult).join("/");
 		console.log(resultUnit);
 		//add "-" to MOMENT results
 		if(rawResultUnit === "MOMENT") {
