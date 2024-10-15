@@ -282,6 +282,18 @@ export async function calculateTreeMJS(object) {
 export function setupMathJSUnits() {
 	console.log("Begin setupMathJSUnits");
 
+	//length
+	//rebar diameter
+	math.createUnit('eighth', {
+		definition: '0.125in',
+		alias: ['eighths']
+	});
+	//weld thickness
+	math.createUnit('sixteenth', {
+		definition: '0.0625in',
+		aliases: ['sixteenths']
+	});
+
 	//Area
 	math.createUnit('sf', {
 		definition: '1ft^2',

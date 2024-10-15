@@ -34,8 +34,8 @@ export const BASE_UNIT_ARRAY = [
 export const UNIT_PREFERENCES = {
   LENGTH: ['ft', 'in', 'm', 'mm'],
   FORCE: ['lb', 'lbs', 'kip', 'k', 'kips', 'N', 'kN'],
-  UNIFORM_LOAD: ['plf', 'klf', 'N/m', 'kN/m'],
-  SURFACE: ['sf', 'sqin', 'in^2', 'ft^2', 'm^2'],
+  UNIFORM_LOAD: ['plf', 'klf', 'pli', 'kli', 'N/m', 'kN/m'],
+  SURFACE: ['sf', 'sqft', 'sqin', 'in^2', 'ft^2', 'm^2'],
   VOLUME: ['in^3', 'ft^3', 'cuft', 'cuin', 'm^3'],
   STIFFNESS: ['in^4'],
   HEXATIC: ['in^6'],
@@ -48,7 +48,7 @@ export const UNIT_SYSTEMS = {
   US: {
     LENGTH: ['ft', 'in'],
     FORCE: ['lb', 'lbs', 'k', 'kip', 'kips'],
-    UNIFORM_LOAD: ['plf', 'klf'],
+    UNIFORM_LOAD: ['plf', 'klf', 'pli', 'kli'],
     PRESSURE: ['psf', 'ksf', 'psi', 'ksi'],
     MOMENT: ['lbft', 'kipft', 'lbin', 'kipin'],
     SURFACE: ['sqin', 'sqft', 'sf', 'in^2', 'ft^2'],
