@@ -37,4 +37,4 @@ export const nonNumberRegex = /[a-zA-z/\^]/;
 //check for invalid MathJS unit characters
 export const invalidMJSUnitRegex = /(?<=\w)-(?=\w)/g;
 //recognize expressions followed by ^ to wrap in parenthesis to avoid Mathjs exponent confusion
-export const exponentExpressionRegex = /(\d+(?:\.\d+)?)\s*([a-zA-Z]+)\s*(\^|\*\*)\s*(\d+(?:\.\d+)?)/g;
+export const exponentExpressionRegex = /(\d+(?:\.\d+)?)([a-zA-Z0-9\-\^]+)\s(\^|\*\*)\s(\d+(?:\.\d+)?)/g;
