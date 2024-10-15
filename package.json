@@ -5,7 +5,6 @@
   "main": "index.html",
   "author": "JoshG",
   "license": "JPI",
-  "type": "module",
   "logseq": {
     "id": "calc-notes"
   },

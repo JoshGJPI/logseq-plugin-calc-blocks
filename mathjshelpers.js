@@ -1,25 +1,33 @@
-import { exponentExpressionRegex, invalidMJSUnitRegex } from "./regex.js";
+import { exponentExpressionRegex, invalidMJSUnitRegex, trimmedOperatorRegex } from "./regex.js";
 import { BASE_UNIT_ARRAY, UNIT_PREFERENCES, UNIT_SYSTEMS } from "./constants.js";
 import { calcBlockMJS } from "./blockhelpers.js";
 import { childTreeObject } from "./index.js";
 import { calcVariableBlockMJS } from "./uuidhelpers.js";
+import { getExpressionUnit } from "./helpers.js";
 
 //determine the type of unit from a MathJS result
 export function getResultUnitType(dimensionArray) {
+	let resultUnitArray = dimensionArray;
 	//check if the input is an array of 10 numbers indicating valueless Unit
 	//use .toString() to allow comparison
-	if (dimensionArray.toString() == [0,0,0,0,0,0,0,0,0,1].toString()) {
+	if (resultUnitArray.length === 10 && resultUnitArray[resultUnitArray.length - 1] !== 0) {
   		console.log("valueless Unit detected");
 		return "VALUELESS";
 	}
+	
+	//check if a valueless unit has been created, and trim normal arrays
+	if (resultUnitArray.length === 10 && resultUnitArray[resultUnitArray.length - 1] === 0) {
+		resultUnitArray = resultUnitArray.slice(0, -1);
+		console.log("A valueless array has been created. This unit is not valueless and has been trimmed to 9 slots\n", resultUnitArray);
+	}
     // Check if the input is a valid array of 9 numbers
-    if (!Array.isArray(dimensionArray) || dimensionArray.length !== 9 || 
-        !dimensionArray.every(num => typeof num === 'number')) {
+    if (!Array.isArray(resultUnitArray) || resultUnitArray.length !== 9 || 
+        !resultUnitArray.every(num => typeof num === 'number')) {
       throw new Error('Input must be an array of 9 numbers');
     }
   
     // Convert the input array to a string for easier comparison
-    const dimensionString = JSON.stringify(dimensionArray);
+    const dimensionString = JSON.stringify(resultUnitArray);
   
     // Find the matching unit in BASE_UNIT_ARRAY
     const matchingUnit = BASE_UNIT_ARRAY.find(unit => 
@@ -29,7 +37,20 @@ export function getResultUnitType(dimensionArray) {
   
     // Return the name if found, otherwise return 'UNKNOWN'
     return matchingUnit ? matchingUnit[0] : 'UNKNOWN';
-  }
+}
+
+//determine if a Mathjs unit result needs to have an exponent added to it
+//rawResult by default has unit.name = "in" and unit.power = 3 for in^3
+export function getConfiguredUnit(rawResultUnit) {
+	let unitName = rawResultUnit.unit.name;
+	//check to see if unit is raised to a power
+	let unitPower = rawResultUnit.power;
+	//add unit exponent if necessary
+	let unitExponent = unitPower > 1 ? `^${unitPower}` : "";
+	let configuredUnit = `${unitName}${unitExponent}`;
+	console.log(unitName, unitPower, configuredUnit);
+	return configuredUnit;
+}
 
 // Get the preferred unit based on unit type and input units
 export function getPreferredUnit(unitType, inputUnits) {
@@ -43,9 +64,10 @@ export function getPreferredUnit(unitType, inputUnits) {
 		break;
 	  }
 	}
-  
+	console.log(unitSystem, unitType, UNIT_SYSTEMS[unitSystem][unitType]);
 	// First, try to find a matching unit from the same system
 	for (const unit of preferences) {
+		console.log(unit, inputUnits, UNIT_SYSTEMS[unitSystem][unitType]?.includes(unit), inputUnits.includes(unit));
 	  if (UNIT_SYSTEMS[unitSystem][unitType]?.includes(unit) && inputUnits.includes(unit)) {
 		return unit;
 	  }
@@ -65,47 +87,75 @@ export function getPreferredUnit(unitType, inputUnits) {
 // Evaluate and return a formatted result using MathJS
 export function formattedEvaluate(text, preferredUnit = '') {
 	try {
-	  // Remove dashes from units to ensure MathJS can parse them correctly
-	  let cleanedText = text.replaceAll(invalidMJSUnitRegex, "");
-	  let cleanedUnit = preferredUnit.replaceAll(invalidMJSUnitRegex, "");
-	  console.log(text, cleanedText, preferredUnit, cleanedUnit);
-	  console.log(math.Unit.isValuelessUnit(cleanedUnit));
+		// Remove dashes from units to ensure MathJS can parse them correctly
+		let cleanedText = text.replaceAll(invalidMJSUnitRegex, "");
+		let cleanedUnit = preferredUnit.replaceAll(invalidMJSUnitRegex, "");
+		console.log(text, cleanedText, preferredUnit, cleanedUnit);
+		console.log(math.Unit.isValuelessUnit(cleanedUnit));
 
-	  //check for custom units to define
-		if (cleanedUnit && !math.Unit.isValuelessUnit(cleanedUnit)) {
+		//check to see if it's a single expression defining the variable
+		let singleExpression = cleanedText.split(" ").length === 1;
+		//if it's a single expression, check to see if the unit needs to be defined
+		if (cleanedUnit === "" && singleExpression) {
+			let expressionUnit = getExpressionUnit(text).join("/");
+			cleanedUnit = expressionUnit;
+		}
+
+		//check for custom units to define
+		if (cleanedUnit) {
 			try {
 				// This will throw an error if the unit doesn't exist
 				math.unit(1, cleanedUnit);
 			} catch (e) {
 				// If the unit doesn't exist, create it as a dimensionless unit
 				console.log(`Creating new dimensionless unit: ${preferredUnit}`);
-				let newUnit = math.createUnit(cleanedUnit, { aliases: [`${cleanedUnit}s`]});
-
+				//create plural/singular of new unit
+				let isPlural = cleanedUnit.toLowerCase()[cleanedUnit.length-1] === "s";
+				let cleanedAlias = isPlural ? cleanedUnit.slice(0, -1) : `${cleanedUnit}s`;
+				let newUnit = math.createUnit(cleanedUnit, { 
+					aliases: [cleanedAlias]
+				});
 				console.log(newUnit)
 			}
 		}
 
-	  let processedText = cleanedText.replaceAll(exponentExpressionRegex, '($1$2)$3$4')
+		let processedText = cleanedText.replaceAll(exponentExpressionRegex, '($1$2) $3 $4')
 		console.log(processedText, cleanedText);
-	  // Evaluate the expression using MathJS
-	  let rawResult = math.evaluate(processedText);
-	  console.log(rawResult);
-	  // Determine the type of unit from the result's dimensions
-	  const unitType = getResultUnitType(rawResult.dimensions);
+		// Evaluate the expression using MathJS
+		let rawResult = math.evaluate(processedText);
+		console.log(rawResult);
+		//format the result and remove all spaces
+		let formattedResult = math.format(rawResult, {
+			notation: 'fixed',
+			precision: 4
+		}).replaceAll(" ", "");
+		//if the result is unitless, don't worry about unit conversions
+		const isUnitless = typeof rawResult === "number";
+		if (isUnitless) {
+			console.log(`No units found in ${text} result`);
+			// Prepare the object to be returned
+			let unitlessResultObject = {
+				formattedResult: formattedResult,
+				rawResult: rawResult,
+				rawResultUnit: ""
+			}
+			
+			console.log(unitlessResultObject);
+			return unitlessResultObject;
+		};
+		// Determine the type of unit from the result's dimensions
+		const unitType = getResultUnitType(rawResult.dimensions);
 		console.log(unitType)
-	  //if the unit isn't supported, notify user and cancel calculation
-	  if (unitType === "UNKNOWN") {
-		logseq.UI.showMsg(`${preferredUnit} is not a supported unit at\n ${text} ${preferredUnit}`, "error", {timeout: 15000});
-		return false;
-	  }
-	  //if the unit is a user defined custom unit, don't worry about Unit conversions
-	  if (unitType === "VALUELESS") {
+		//if the unit isn't supported, notify user and cancel calculation
+		if (unitType === "UNKNOWN") {
+			logseq.UI.showMsg(`${preferredUnit} is not a supported unit at\n ${text} ${preferredUnit}`, "error", {timeout: 15000});
+			return false;
+		}
+		//if the unit is a user defined custom unit, don't worry about Unit conversions
+		if (unitType === "VALUELESS") {
 			// Prepare the object to be returned
 			let formattedValuelessObject = {
-			formattedResult: math.format(rawResult, {
-				notation: 'fixed',
-				precision: 4
-			  }),
+			formattedResult: formattedResult,
 			rawResult: rawResult,
 			//expressionUnits: unitArray,
 			rawResultUnit: "VALUELESS"
@@ -113,58 +163,66 @@ export function formattedEvaluate(text, preferredUnit = '') {
 		
 			console.log("Valueless Unit defined\n", formattedValuelessObject);
 			return formattedValuelessObject;
-	  }
-	  // Extract the names of all units used in the input expression
-	  const inputUnits = rawResult.units.map(item => item.unit.name);
-	  
-	  // Determine the most appropriate default unit based on the unit type and input units
-	  let defaultUnit = getPreferredUnit(unitType, inputUnits);
+		}
+		// Extract the names of all units used in the input expression
+		const inputUnits = cleanedText.split(" ").reduce((total, item) => {
+			//if it's an operator, don't add it
+			let isOperator = trimmedOperatorRegex.test(item) && item.length === 1;
+			if (isOperator) return total;
 
-	  if (!defaultUnit) defaultUnit = "";
-	  
-	  // Use the explicitly preferred unit if provided, otherwise use the determined default unit
-	  const targetUnit = cleanedUnit || defaultUnit;
-	  console.log(cleanedUnit, defaultUnit, targetUnit);
-	  console.log(rawResult);
-	  // If a target unit is specified and it's different from the current result unit,
-	  // convert the result to the target unit
-	  if (targetUnit && targetUnit !== rawResult.units[0].unit.name) {
-		rawResult = math.evaluate(`${rawResult} to ${targetUnit}`);
-	  }
-  
-	  // Format the result to a fixed number of decimal places for consistency
-	  let formattedResult = math.format(rawResult, {
-		notation: 'fixed',
-		precision: 4
-	  });
-  
-	//   // Extract information about the units involved in the calculation
-	//   let unitArray = rawResult.units.map(item => ({
-	// 	unitName: item.unit.name,
-	// 	unitBase: item.unit.base.key
-	//   }));
-  
-	  // Determine the final result unit type
-	  let resultDimensionArray = rawResult.dimensions;
-	  let resultUnit = getResultUnitType(resultDimensionArray)
-  
-	  // Prepare the object to be returned
-	  let formattedResultObject = {
-		formattedResult: formattedResult,
-		rawResult: rawResult,
-		//expressionUnits: unitArray,
-		rawResultUnit: resultUnit
-	  }
-  
-	  console.log(formattedResultObject);
-	  return formattedResultObject;
+			let unitArray = getExpressionUnit(item);
+			console.log(unitArray);
+			//if units are found, push them into running total
+			if (unitArray) {
+				unitArray.forEach(item => total.push(item))
+			}
+			return total;
+		}, []);
+		console.log(inputUnits);
+
+		// Determine the most appropriate default unit based on the unit type and input units
+		let defaultUnit = getPreferredUnit(unitType, inputUnits);
+		if (!defaultUnit) defaultUnit = "";
+		
+		// Use the explicitly preferred unit if provided, otherwise use the determined default unit
+		let targetUnit = cleanedUnit || defaultUnit;
+		console.log("clean: ", cleanedUnit, "\ndefault: ", defaultUnit, "\ntarget:", targetUnit, "\nconfigured: ", getConfiguredUnit(rawResult.units[0]));
+		console.log(rawResult, formattedResult);
+
+		// If a target unit is specified and it's different from the current result unit,
+		// convert the result to the target unit
+		if (targetUnit && targetUnit !== getConfiguredUnit(rawResult.units[0])) {
+			let evaluateString = `${math.format(rawResult, 4)} to ${targetUnit}`;
+			console.log(evaluateString);
+			rawResult = math.evaluate(evaluateString);
+			// reformat result after unit conversion
+			formattedResult = math.format(rawResult, {
+				notation: 'fixed',
+				precision: 4
+			});
+		}
+
+		// Determine the final result unit type
+		let resultDimensionArray = rawResult.dimensions;
+		let resultUnit = getResultUnitType(resultDimensionArray)
+
+		// Prepare the object to be returned
+		let formattedResultObject = {
+			formattedResult: formattedResult,
+			rawResult: rawResult,
+			//expressionUnits: unitArray,
+			rawResultUnit: resultUnit
+		}
+
+		console.log(formattedResultObject);
+		return formattedResultObject;
   
 	} catch (error) {
-	  // If an error occurs during calculation, show an error message to the user
-	  // and log the error for debugging
-	  logseq.UI.showMsg(`Error calculating ${text}\n${error}`, "error", {timeout: 15000});
-	  console.error(error);
-	  throw error;
+		// If an error occurs during calculation, show an error message to the user
+		// and log the error for debugging
+		logseq.UI.showMsg(`Error calculating ${text}\n${error}`, "error", {timeout: 15000});
+		console.error(error);
+		throw error;
 	}
 }
 
@@ -226,14 +284,28 @@ export function setupMathJSUnits() {
 
 	//Area
 	math.createUnit('sf', {
-		definition: 'ft^2',
+		definition: '1ft^2',
 	});
 
 	//Volume
 	math.createUnit('cf', {
-		definition: 'ft^3',
+		definition: '1ft^3',
 	});
-	
+
+	//Stiffness
+	math.createUnit('in4', {
+		definition: '1in^4',
+		aliases: ['quin' ],
+		baseName: "STIFFNESS"
+	})
+
+	//Inches to the sixth
+	math.createUnit('in6', {
+		definition: '1in^6',
+		aliases: ['hexin' ],
+		baseName: "HEXIC"
+	})
+
 	//force
 	//override lb/lbs to be lbf instead of lbm
 	math.createUnit('lbs','1lbf', {override: true});
