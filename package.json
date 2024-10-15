@@ -7,8 +7,5 @@
   "license": "JPI",
   "logseq": {
     "id": "calc-notes"
-  },
-  "dependencies": {
-    "mathjs": "^13.2.0"
   }
 }
