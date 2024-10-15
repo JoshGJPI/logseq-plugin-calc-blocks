@@ -12,6 +12,8 @@ export const BASE_UNIT_ARRAY = [
     ["UNIFORM_LOAD", [1, 0, -2, 0, 0, 0, 0, 0, 0]],
     ["SURFACE", [0, 2, 0, 0, 0, 0, 0, 0, 0]],
     ["VOLUME", [0, 3, 0, 0, 0, 0, 0, 0, 0]],
+    ["STIFFNESS", [0, 4, 0, 0, 0, 0, 0, 0, 0]],
+    ["HEXATIC", [0, 6, 0, 0, 0, 0, 0, 0, 0]],
     ["MOMENT", [1, 2, -2, 0, 0, 0, 0, 0, 0]],
     ["POWER", [1, 2, -3, 0, 0, 0, 0, 0, 0]],
     ["PRESSURE", [1, -1, -2, 0, 0, 0, 0, 0, 0]],
@@ -31,11 +33,13 @@ export const BASE_UNIT_ARRAY = [
 // Preference order for units of different types
 export const UNIT_PREFERENCES = {
   LENGTH: ['ft', 'in', 'm', 'mm'],
-  FORCE: ['lb', 'kip', 'N', 'kN'],
+  FORCE: ['lb', 'lbs', 'kip', 'k', 'kips', 'N', 'kN'],
   UNIFORM_LOAD: ['plf', 'klf', 'N/m', 'kN/m'],
-  SURFACE: ['sf', 'sqin', 'm^2'],
-  VOLUME: ['cuft', 'cuin', 'm^3'],
-  MOMENT: ['lb*ft', 'kip*ft', 'lb*in', 'kip*in', 'N*m', 'kN*m'],
+  SURFACE: ['sf', 'sqin', 'in^2', 'ft^2', 'm^2'],
+  VOLUME: ['in^3', 'ft^3', 'cuft', 'cuin', 'm^3'],
+  STIFFNESS: ['in^4'],
+  HEXATIC: ['in^6'],
+  MOMENT: ['lbft', 'kipft', 'lbin', 'kipin', 'Nm', 'kNm'],
   PRESSURE: ['psf', 'ksf', 'psi', 'ksi', 'Pa', 'kPa']
 };
 
@@ -43,12 +47,24 @@ export const UNIT_PREFERENCES = {
 export const UNIT_SYSTEMS = {
   US: {
     LENGTH: ['ft', 'in'],
-    FORCE: ['lb', 'kip'],
-    MOMENT: ['lb*ft', 'kip*ft', 'lb*in', 'kip*in'],
+    FORCE: ['lb', 'lbs', 'k', 'kip', 'kips'],
+    UNIFORM_LOAD: ['plf', 'klf'],
+    PRESSURE: ['psf', 'ksf', 'psi', 'ksi'],
+    MOMENT: ['lbft', 'kipft', 'lbin', 'kipin'],
+    SURFACE: ['sqin', 'sqft', 'sf', 'in^2', 'ft^2'],
+    VOLUME: ['cuin', 'cuft', 'cf', 'in^3', 'ft^3'],
+    STIFFNESS: ['quartin', 'in^4'],
+    HEXATIC: ['hexin', 'in^6'],
   },
   METRIC: {
     LENGTH: ['m', 'mm'],
     FORCE: ['N', 'kN'],
+    UNIFORM_LOAD: ['N/m', 'kN/m', 'N/mm', 'kN/mm'],
+    PRESSURE: ['Pa', 'kPa'],
     MOMENT: ['N*m', 'kN*m'],
+    SURFACE: ['mm^2', 'm^2', 'sqmm', 'sqm'],
+    VOLUME: ['mm^3', 'm^3', 'cmm', 'cm'],
+    STIFFNESS: ['mm^4'],
+    HEXATIC: ['mm^6']
   }
 };
