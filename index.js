@@ -47,25 +47,7 @@ function main() {
 
 		//update current block
 		await updateBlockDisplay(calculatedBlock);
-		console.log('calcBlock completed');
-	});
-
-	//register 'cMBlock' to calculate a single block
-	logseq.Editor.registerSlashCommand('cMBlock', async () => {
-		//pause before running to allow DB to update with current changes
-		await new Promise((resolve) => setTimeout(resolve, 400));
-
-		console.log('begin cMBlock slash');
-
-		//get the current block
-		let currentBlock = await logseq.Editor.getCurrentBlock();
-		console.log(currentBlock);
-		//calculate block contents
-		let calculatedBlock = await calcBlockMJS(currentBlock);
-
-		//update current block
-		await updateBlockDisplay(calculatedBlock);
-		console.log('calcMBlock completed');
+		console.log('cBlock completed');
 	});
 
 	//register 'cTree' to calculate a block, all it's children, and any 'linked' blocks
@@ -99,45 +81,10 @@ function main() {
 			console.log(block2Update);
 		}
 		console.log(calcedTree)
-		console.log("calculate block tree complete!");
+		console.log("cTree complete!");
 	});
 
-	//register 'cTree' to calculate a block, all it's children, and any 'linked' blocks
-	logseq.Editor.registerSlashCommand('cMTree', async () => {
-		//pause before running to allow DB to update with current changes
-		await new Promise((resolve) => setTimeout(resolve, 400));
-
-		console.log('begin cMTree slash');
-
-		let currentBlock = await logseq.Editor.getCurrentBlock();
-		console.log(currentBlock);
-
-		//reset childTree to avoid old values impacting calcs
-		resetChildTree();
-
-		//cycle through all children and create the tree
-		childTreeObject = await createChildTreeObject(currentBlock.uuid);
-		console.log(childTreeObject);
-		//calculate all items of the tree
-		if (childTreeObject === false) {
-			console.log("Error with ChildTreeObject");
-			return false;
-		};
-		let calcedTree = await calculateTreeMJS(childTreeObject);
-		console.log(calcedTree);
-		//update display of all blocks
-		for (let i = 0; i < calcedTree.calculatedBlocks.length; i++) {
-			let block2Update = calcedTree.calculatedBlocks[i];
-			console.log(block2Update);
-			await updateBlockDisplay(block2Update);
-			console.log(block2Update);
-		}
-		console.log(calcedTree)
-		console.log("cMTree complete!");
-	});
-
-
-	//register 'cDNotes' to calculate a block, all it's children, and any 'linked' blocks
+	//register 'cDNotes' to find the parent block containing "[[Design Notes]]" and calculate all it's children and 'linked' blocks
 	logseq.Editor.registerSlashCommand('cDNotes', async () => {
 		//pause before running to allow DB to update with current changes
 		await new Promise((resolve) => setTimeout(resolve, 400));
@@ -168,7 +115,93 @@ function main() {
 			console.log(block2Update);
 		}
 		console.log(calcedTree)
-		console.log("calculate cDNotes complete!");
+		console.log("cDNotes complete!");
+	});
+
+	//register 'cUBlock' to calculate a single block with Mathjs unit considerations
+	logseq.Editor.registerSlashCommand('cUBlock', async () => {
+		//pause before running to allow DB to update with current changes
+		await new Promise((resolve) => setTimeout(resolve, 400));
+
+		console.log('begin cUBlock slash');
+
+		//get the current block
+		let currentBlock = await logseq.Editor.getCurrentBlock();
+		console.log(currentBlock);
+		//calculate block contents
+		let calculatedBlock = await calcBlockMJS(currentBlock);
+
+		//update current block
+		await updateBlockDisplay(calculatedBlock);
+		console.log('cUBlock completed');
+	});
+	
+	//register 'cUTree' to calculate a block, all it's children, and any 'linked' blocks with Mathjs unit considerations
+	logseq.Editor.registerSlashCommand('cUTree', async () => {
+		//pause before running to allow DB to update with current changes
+		await new Promise((resolve) => setTimeout(resolve, 400));
+
+		console.log('begin cUTree slash');
+
+		let currentBlock = await logseq.Editor.getCurrentBlock();
+		console.log(currentBlock);
+
+		//reset childTree to avoid old values impacting calcs
+		resetChildTree();
+
+		//cycle through all children and create the tree
+		childTreeObject = await createChildTreeObject(currentBlock.uuid);
+		console.log(childTreeObject);
+		//calculate all items of the tree
+		if (childTreeObject === false) {
+			console.log("Error with ChildTreeObject");
+			return false;
+		};
+		let calcedTree = await calculateTreeMJS(childTreeObject);
+		console.log(calcedTree);
+		//update display of all blocks
+		for (let i = 0; i < calcedTree.calculatedBlocks.length; i++) {
+			let block2Update = calcedTree.calculatedBlocks[i];
+			console.log(block2Update);
+			await updateBlockDisplay(block2Update);
+			console.log(block2Update);
+		}
+		console.log(calcedTree)
+		console.log("cUTree complete!");
+	});
+
+	//register 'cUDNotes' to find the parent block containing "[[Design Notes]]" and calculate all it's children and 'linked' blocks with Mathjs unit considerations
+	logseq.Editor.registerSlashCommand('cUDNotes', async () => {
+		//pause before running to allow DB to update with current changes
+		await new Promise((resolve) => setTimeout(resolve, 400));
+
+		console.log('begin cDNotes slash');
+
+		let parentDesignNotesBlockUUID = await getParentReferenceBlockUUID("Design Notes");
+		console.log(parentDesignNotesBlockUUID);
+
+		//reset childTree to avoid old values impacting calcs
+		resetChildTree();
+
+		//cycle through all children and create the tree
+		childTreeObject = await createChildTreeObject(parentDesignNotesBlockUUID);
+		console.log(childTreeObject);
+		//calculate all items of the tree
+		if (childTreeObject === false) {
+			console.log("Error with ChildTreeObject");
+			return false;
+		};
+		let calcedTree = await calculateTreeMJS(childTreeObject);
+		console.log(calcedTree);
+		//update display of all blocks
+		for (let i = 0; i < calcedTree.calculatedBlocks.length; i++) {
+			let block2Update = calcedTree.calculatedBlocks[i];
+			console.log(block2Update);
+			await updateBlockDisplay(block2Update);
+			console.log(block2Update);
+		}
+		console.log(calcedTree)
+		console.log("cDNotes complete!");
 	});
 
 	//register 'rBlock' to convert [value](((UUID))) back to ${variable name} in current block
