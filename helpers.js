@@ -1,9 +1,25 @@
 import { childTreeObject } from './index.js';
 import { calcBlock } from './blockhelpers.js';
 import { calcVariableBlock } from './uuidhelpers.js';
-import { invalidMJSUnitRegex, logRegex, naturalLogRegex, operatorRegex, trigRegex } from './regex.js';
+import { logRegex, naturalLogRegex, nonNumberRegex, operatorRegex, trigRegex, unitParenthesisRegex } from './regex.js';
 
 export const unitCancel = "_";
+
+//get the unit from a composite expression i.e. "plf" from 12plf or "in^3" from 12in^3
+export function getExpressionUnit(expression) {
+	console.log(expression, expression.match(nonNumberRegex));
+	let containsUnit = expression.match(nonNumberRegex);
+
+	//return empty if there is no unit
+	if (containsUnit === null) return "";
+
+	//get unit from expression
+	let unitIndex = expression.match(nonNumberRegex).index;
+	let rawUnit = expression.slice(unitIndex);
+	let expressionUnits = rawUnit.split("/");
+	console.log(rawUnit, expressionUnits);
+	return expressionUnits;
+}
 
 //take the UUID of a given block and return an array of children blocks
 export async function getChildBlocks(uuid) {
@@ -159,6 +175,7 @@ export async function updateBlockDisplay(block) {
 
 //determine if a block's calculated value should be added after "=" in the string
 export function determineDisplayResults(resultString) {
+	console.log(resultString);
 	console.log("begin determineDisplayResults");
 	let displayResults = false;
 	//if there's an operator, display results
@@ -167,7 +184,15 @@ export function determineDisplayResults(resultString) {
 	if (trigRegex.test(resultString)) displayResults = true;
 	//if there's a log or ln function, display results
 	if (logRegex.test(resultString) || naturalLogRegex.test(resultString)) displayResults = true;
-
+	//if there's a unit conversion, display results
+	let resultArray = resultString.split(" ");
+	if (resultArray.length > 1){
+		let lastItem = resultArray[resultArray.length - 1];
+		if (unitParenthesisRegex.test(lastItem)) {
+			displayResults = true;
+			console.log("unit converted");
+		}
+	}
 	return displayResults;
 }
 
