@@ -107,8 +107,10 @@ export function formattedEvaluate(text, preferredUnit = '') {
 				// This will throw an error if the unit doesn't exist
 				math.unit(1, cleanedUnit);
 			} catch (e) {
+				console.log(e)
+				let newUnitName = preferredUnit ? preferredUnit : cleanedUnit;
 				// If the unit doesn't exist, create it as a dimensionless unit
-				console.log(`Creating new dimensionless unit: ${preferredUnit}`);
+				console.log(`Creating new dimensionless unit: ${newUnitName}`);
 				//create plural/singular of new unit
 				let isPlural = cleanedUnit.toLowerCase()[cleanedUnit.length-1] === "s";
 				let cleanedAlias = isPlural ? cleanedUnit.slice(0, -1) : `${cleanedUnit}s`;
@@ -286,7 +288,7 @@ export function setupMathJSUnits() {
 	//rebar diameter
 	math.createUnit('eighth', {
 		definition: '0.125in',
-		alias: ['eighths']
+		aliases: ['eighths']
 	});
 	//weld thickness
 	math.createUnit('sixteenth', {
