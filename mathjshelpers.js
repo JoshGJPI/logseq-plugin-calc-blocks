@@ -304,6 +304,30 @@ export function setupMathJSUnits() {
 		definition: '1ft^3',
 	});
 
+	//Density
+	//US
+	math.createUnit('pcf', {
+		definition: '1lbf / ft^3'
+	});
+	math.createUnit('kcf', {
+		definition: '1kip / ft^3'
+	});
+	math.createUnit('pci', {
+		definition: '1lbf / in^3'
+	});
+	math.createUnit('kci', {
+		definition: '1kip / in^3'
+	});
+	//metric
+	math.createUnit('Nmm3', {
+		definition: '1N / mm^3',
+		aliases: ['N/mm3']
+	});
+	math.createUnit('kNm3', {
+		definition: '1kN / m^3',
+		aliases: ['kN/m3']
+	});
+
 	//Stiffness
 	math.createUnit('in4', {
 		definition: '1in^4',

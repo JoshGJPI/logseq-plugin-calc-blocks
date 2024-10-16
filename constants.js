@@ -12,6 +12,7 @@ export const BASE_UNIT_ARRAY = [
     ["UNIFORM_LOAD", [1, 0, -2, 0, 0, 0, 0, 0, 0]],
     ["SURFACE", [0, 2, 0, 0, 0, 0, 0, 0, 0]],
     ["VOLUME", [0, 3, 0, 0, 0, 0, 0, 0, 0]],
+    ["DENSITY", [1, -2, -2, 0, 0, 0, 0, 0, 0]],
     ["STIFFNESS", [0, 4, 0, 0, 0, 0, 0, 0, 0]],
     ["HEXATIC", [0, 6, 0, 0, 0, 0, 0, 0, 0]],
     ["MOMENT", [1, 2, -2, 0, 0, 0, 0, 0, 0]],
@@ -37,6 +38,7 @@ export const UNIT_PREFERENCES = {
   UNIFORM_LOAD: ['plf', 'klf', 'pli', 'kli', 'N/m', 'kN/m'],
   SURFACE: ['sf', 'sqft', 'sqin', 'in^2', 'ft^2', 'm^2'],
   VOLUME: ['in^3', 'ft^3', 'cuft', 'cuin', 'm^3'],
+  DENSITY: ['pcf', 'kcf', 'pci', 'kci', 'N/mm^3', 'kN/m^3'],
   STIFFNESS: ['in^4'],
   HEXATIC: ['in^6'],
   MOMENT: ['lbft', 'kipft', 'lbin', 'kipin', 'Nm', 'kNm'],
@@ -53,6 +55,7 @@ export const UNIT_SYSTEMS = {
     MOMENT: ['lbft', 'kipft', 'lbin', 'kipin'],
     SURFACE: ['sqin', 'sqft', 'sf', 'in^2', 'ft^2'],
     VOLUME: ['cuin', 'cuft', 'cf', 'in^3', 'ft^3'],
+    DENSITY: ['pcf', 'kcf', 'pci', 'kci'],
     STIFFNESS: ['quartin', 'in^4'],
     HEXATIC: ['hexin', 'in^6'],
   },
@@ -64,6 +67,7 @@ export const UNIT_SYSTEMS = {
     MOMENT: ['N*m', 'kN*m'],
     SURFACE: ['mm^2', 'm^2', 'sqmm', 'sqm'],
     VOLUME: ['mm^3', 'm^3', 'cmm', 'cm'],
+    DENSITY: ['N/mm^3', 'kN/m^3'],
     STIFFNESS: ['mm^4'],
     HEXATIC: ['mm^6']
   }

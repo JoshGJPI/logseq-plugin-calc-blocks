@@ -120,6 +120,7 @@
 				  | UNIFORM LOAD | plf, klf, pli, kli, lb/ft, lbs/ft, lb/in, lbs/in, k/ft, kip/ft, kips/ft, k/in, kip/in, kips/in, N/m, kN/m|
 				  | SURFACE | sf, sqin, in^2, ft^2, m^2|
 				  | VOLUME | in^3, ft^3, cuft, cuin, m^3|
+				  | DENSITY | pcf, kcf, pci, kci, N/mm^3, kN/m^3 |
 				  | STIFFNESS | in^4|
 				  | HEXATIC | in^6 |
 				  | MOMENT (with or without -) | lb-ft, lbs-ft, k-ft, kip-ft, kips-ft, lb-in, lbs-in, k-in, kip-in, kips-in, Nm, kNm |
