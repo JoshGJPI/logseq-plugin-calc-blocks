@@ -96,7 +96,7 @@ export function formattedEvaluate(text, preferredUnit = '') {
 		//check to see if it's a single expression defining the variable
 		let singleExpression = cleanedText.split(" ").length === 1;
 		//if it's a single expression, check to see if the unit needs to be defined
-		if (cleanedUnit === "" && singleExpression) {
+		if (cleanedUnit !== "" && singleExpression) {
 			let expressionUnit = getExpressionUnit(text).join("/");
 			cleanedUnit = expressionUnit;
 		}
