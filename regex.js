@@ -14,6 +14,8 @@ export const wordRegex = /^[a-zA-Z]/;
 export const pageRefRegex = /\[\[(.*)\]\]/;
 //check for trig functions looking for 3 characters followed by "("
 export const trigRegex = /(cos)|(sin)|(tan)\(/i;
+//check for max/min/average functions  followed by "("
+export const maxRegex = /(max)|(min)|(tan)\(/i;
 //check for logarithmic functions looking for "log" followed by 0-2 digits then "("
 export const logRegex = /log\d{0,2}\(/i;
 //check for natural log ln(
@@ -25,7 +27,7 @@ export const startingNumberRegex = /^[\d\.]+/;
 //include "_" to check for unit canceler
 export const unitsRegex = /[a-zA-Z_%]+.*/;
 //check for conversion unit in ()
-export const unitParenthesisRegex = /\(([a-zA-Z/0-9\-\^]+)\)/;
+export const unitParenthesisRegex = /^\(([a-zA-Z/0-9\-\^]+)\)$/;
 //find all brackets [ ] in a string
 export const bracketsRegex = /[\[\]]*/g;
 //find all parenthesis ( ) in a string
