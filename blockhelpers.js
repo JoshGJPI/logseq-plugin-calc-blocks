@@ -240,7 +240,7 @@ export function calculateBlockValueMJS(block) {
 
 	//if there's an operator, trig function, or log function, add = results to the end of calculatedContent
 	let displayedResults = determineDisplayResults(content) ? ` = ${resultNum}${unit}` : "";
-
+	console.log(displayedResults, content, `${resultNum}${unit}`);
 	//update block info after calculation
 	calcBlock.hasBeenCalced = true;
 	calcBlock.value = resultNum;

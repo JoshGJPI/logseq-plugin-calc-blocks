@@ -1,7 +1,7 @@
 import { childTreeObject } from './index.js';
 import { calcBlock } from './blockhelpers.js';
 import { calcVariableBlock } from './uuidhelpers.js';
-import { logRegex, naturalLogRegex, nonNumberRegex, operatorRegex, trigRegex, unitParenthesisRegex } from './regex.js';
+import { logRegex, mJSFunctionRegex, naturalLogRegex, nonNumberRegex, operatorRegex, trigRegex, unitParenthesisRegex } from './regex.js';
 
 export const unitCancel = "_";
 
@@ -175,8 +175,8 @@ export async function updateBlockDisplay(block) {
 
 //determine if a block's calculated value should be added after "=" in the string
 export function determineDisplayResults(resultString) {
-	console.log(resultString);
 	console.log("begin determineDisplayResults");
+	console.log(resultString);
 	let displayResults = false;
 	//if there's an operator, display results
 	if (operatorRegex.test(resultString)) displayResults = true;
@@ -193,6 +193,14 @@ export function determineDisplayResults(resultString) {
 			console.log("unit converted");
 		}
 	}
+	//if there's a mathJS calculation, display results
+	console.log(mJSFunctionRegex.test(resultString));
+	mJSFunctionRegex.lastIndex = 0; // Reset the regex index
+	if (mJSFunctionRegex.test(resultString)) {
+		console.log("mathJS function found");
+		displayResults = true;
+	}
+	console.log(displayResults);
 	return displayResults;
 }
 

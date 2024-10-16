@@ -1,7 +1,7 @@
 //finds form of ${sample text}
-export const nameRegex = /\$\{(.*?)\}(?=\s|$)/g;
+export const nameRegex = /\$\{(.*?)\}(?=\s|,|$)/g;
 //finds form of [text](((block uuid)))
-export const namedUUIDRegex = /\[([^\]]+)\]\(\(\(([^\)]+)\)\)\)/g;
+export const namedUUIDRegex = /\[([^\]\s]+)\]\(\(\(([^\)]+)\)\)\)/g;
 //finds form of (((block uuid)))
 export const UUIDRegex = /^\(\(([^\)]+)\)\)$/;
 //finds a space separated operator within a whole string
@@ -15,7 +15,7 @@ export const pageRefRegex = /\[\[(.*)\]\]/;
 //check for trig functions looking for 3 characters followed by "("
 export const trigRegex = /(cos)|(sin)|(tan)\(/i;
 //check for max/min/average functions  followed by "("
-export const maxRegex = /(max)|(min)|(tan)\(/i;
+export const mJSFunctionRegex = /[a-z]+\(\s/g;
 //check for logarithmic functions looking for "log" followed by 0-2 digits then "("
 export const logRegex = /log\d{0,2}\(/i;
 //check for natural log ln(
