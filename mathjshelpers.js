@@ -87,6 +87,8 @@ export function getPreferredUnit(unitType, inputUnits) {
 // Evaluate and return a formatted result using MathJS
 export function formattedEvaluate(text, preferredUnit = '') {
 	try {
+		const evaluatePrecision = 8;
+		const resultPrecision = 4;
 		// Remove dashes from units to ensure MathJS can parse them correctly
 		let cleanedText = text.replaceAll(invalidMJSUnitRegex, "");
 		let cleanedUnit = preferredUnit.replaceAll(invalidMJSUnitRegex, "");
@@ -121,26 +123,21 @@ export function formattedEvaluate(text, preferredUnit = '') {
 			}
 		}
 
-		let processedText = cleanedText.replaceAll(exponentExpressionRegex, '($1$2) $3 $4')
+		let processedExponentText = cleanedText.replaceAll(exponentExpressionRegex, '($1$2) $3 $4');
+		let processedText = processedExponentText.replaceAll(/π/g, "pi");
 		console.log(processedText, cleanedText);
 		// Evaluate the expression using MathJS
 		let rawResult = math.evaluate(processedText);
 		console.log(rawResult);
 		//format the result and remove all spaces
-		let formattedResult = math.format(rawResult, {
-			notation: 'fixed',
-			precision: 4
-		}).replaceAll(" ", "");
+		let formattedResult = prepareResult(rawResult, evaluatePrecision).formattedResult.replaceAll(" ", "");
+		console.log(formattedResult)
 		//if the result is unitless, don't worry about unit conversions
 		const isUnitless = typeof rawResult === "number";
 		if (isUnitless) {
-			console.log(`No units found in ${text} result`);
-			// Prepare the object to be returned
-			let unitlessResultObject = {
-				formattedResult: formattedResult,
-				rawResult: rawResult,
-				rawResultUnit: ""
-			}
+			console.log(`No units found in ${text} result`, formattedResult);
+			formattedResult = parseFloat(formattedResult);			// Prepare the object to be returned
+			let unitlessResultObject = prepareResult(formattedResult, resultPrecision, "");
 			
 			console.log(unitlessResultObject);
 			return unitlessResultObject;
@@ -156,12 +153,7 @@ export function formattedEvaluate(text, preferredUnit = '') {
 		//if the unit is a user defined custom unit, don't worry about Unit conversions
 		if (unitType === "VALUELESS") {
 			// Prepare the object to be returned
-			let formattedValuelessObject = {
-			formattedResult: formattedResult,
-			rawResult: rawResult,
-			//expressionUnits: unitArray,
-			rawResultUnit: "VALUELESS"
-			}
+			let formattedValuelessObject = prepareResult(formattedResult, resultPrecision, "VALUELESS");
 		
 			console.log("Valueless Unit defined\n", formattedValuelessObject);
 			return formattedValuelessObject;
@@ -191,30 +183,20 @@ export function formattedEvaluate(text, preferredUnit = '') {
 		console.log("clean: ", cleanedUnit, "\ndefault: ", defaultUnit, "\ntarget:", targetUnit, "\nconfigured: ", getConfiguredUnit(rawResult.units[0]));
 		console.log(rawResult, formattedResult);
 
+		let initialResultUnit = getExpressionUnit(formattedResult);
+		console.log(initialResultUnit);
 		// If a target unit is specified and it's different from the current result unit,
 		// convert the result to the target unit
-		if (targetUnit && targetUnit !== getConfiguredUnit(rawResult.units[0])) {
-			let evaluateString = `${math.format(rawResult, 4)} to ${targetUnit}`;
+		if (targetUnit && targetUnit !== initialResultUnit) {
+			let evaluateString = `${formattedResult} to ${targetUnit}`;
 			console.log(evaluateString);
 			rawResult = math.evaluate(evaluateString);
 			// reformat result after unit conversion
-			formattedResult = math.format(rawResult, {
-				notation: 'fixed',
-				precision: 4
-			});
+			formattedResult = prepareResult(rawResult, resultPrecision)
 		}
-
-		// Determine the final result unit type
-		let resultDimensionArray = rawResult.dimensions;
-		let resultUnit = getResultUnitType(resultDimensionArray)
 
 		// Prepare the object to be returned
-		let formattedResultObject = {
-			formattedResult: formattedResult,
-			rawResult: rawResult,
-			//expressionUnits: unitArray,
-			rawResultUnit: resultUnit
-		}
+		let formattedResultObject = prepareResult(rawResult, resultPrecision);
 
 		console.log(formattedResultObject);
 		return formattedResultObject;
@@ -280,6 +262,25 @@ export async function calculateTreeMJS(object) {
 	return childTreeObject;
 }
 
+//prepare a result object for MJS
+export function prepareResult(rawResult, precision=4, unitType) {
+	//format final result
+	let formattedResult = math.format(rawResult, {
+		notation: "fixed",
+		precision: precision
+	})
+
+	// Determine the final result unit type
+	let resultDimensionArray = rawResult?.dimensions;
+	let resultUnitType = resultDimensionArray ? getResultUnitType(resultDimensionArray) : "";
+	if (unitType) resultUnitType = unitType;
+
+	return {
+		formattedResult: formattedResult,
+		rawResult: rawResult,
+		rawResultUnit: resultUnitType
+	}
+}
 //establish custom Mathjs units
 export function setupMathJSUnits() {
 	console.log("Begin setupMathJSUnits");
