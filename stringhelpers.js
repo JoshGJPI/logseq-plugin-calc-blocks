@@ -290,9 +290,9 @@ export function calculateStringValueMJS(text) {
 
 	// Extract the numeric value from the formatted result
 	// This regex matches the number at the start of the string
-	const numericMatch = formattedResult.match(startingNumberRegex);
-	console.log(numericMatch, formattedResult);
-	const resultNum = numericMatch ? parseFloat(numericMatch[0]) : NaN;
+	
+	let parsedResult = parseExpressionValues(formattedResult);
+	const resultNum = parsedResult.value ? parsedResult.value : NaN;
 
 	if (isNaN(resultNum)) {
 		console.error("Failed to parse numeric value from", formattedResult);
