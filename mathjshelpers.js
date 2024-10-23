@@ -1,4 +1,4 @@
-import { exponentExpressionRegex, invalidMJSUnitRegex, trimmedOperatorRegex } from "./regex.js";
+import { exponentExpressionRegex, globalUnitsRegex, invalidMJSUnitRegex, startingNumberRegex, trimmedOperatorRegex } from "./regex.js";
 import { BASE_UNIT_ARRAY, UNIT_PREFERENCES, UNIT_SYSTEMS } from "./constants.js";
 import { calcBlockMJS } from "./blockhelpers.js";
 import { childTreeObject } from "./index.js";
@@ -10,14 +10,14 @@ export function getResultUnitType(dimensionArray) {
 	let resultUnitArray = dimensionArray;
 	//check if the input is an array of 10 numbers indicating valueless Unit
 	//use .toString() to allow comparison
-	if (resultUnitArray.length === 10 && resultUnitArray[resultUnitArray.length - 1] !== 0) {
+	if (resultUnitArray.length > 9 && !resultUnitArray.slice(8).reduce((total, current) => total && current === 0, true)) {
   		console.log("valueless Unit detected");
 		return "VALUELESS";
 	}
-	
 	//check if a valueless unit has been created, and trim normal arrays
-	if (resultUnitArray.length === 10 && resultUnitArray[resultUnitArray.length - 1] === 0) {
-		resultUnitArray = resultUnitArray.slice(0, -1);
+	if (resultUnitArray.length > 9 && resultUnitArray.slice(8).reduce((total, current) => total && current === 0, true)) {
+		resultUnitArray = resultUnitArray.slice(0, 9);
+		console.log(dimensionArray, resultUnitArray);
 		console.log("A valueless array has been created. This unit is not valueless and has been trimmed to 9 slots\n", resultUnitArray);
 	}
     // Check if the input is a valid array of 9 numbers
@@ -50,6 +50,26 @@ export function getConfiguredUnit(rawResultUnit) {
 	let configuredUnit = `${unitName}${unitExponent}`;
 	console.log(unitName, unitPower, configuredUnit);
 	return configuredUnit;
+}
+
+//create a custom Mathjs unit and plural/singluar alias
+export function createCustomUnit(text) {
+	console.log("Begin createCustomUnit", text);
+	//if text is undefined, return false
+	if (!text) {
+		console.log(`no Unit Text found: ${text}`);
+		return false;
+	}
+	//check if it ends in an "s" - assume this is plural
+	let isPlural = text.toLowerCase()[text.length-1] === "s";
+	//determine if an "s" needs to be added to the alias
+	let cleanedAlias = isPlural ? text.slice(0, -1) : `${text}s`;
+	//define the new unit and alias
+	let newUnit = math.createUnit(text, { 
+		aliases: [cleanedAlias]
+	});
+
+	console.log(`Created new unit: ${text}\n`, newUnit);
 }
 
 // Get the preferred unit based on unit type and input units
@@ -85,10 +105,10 @@ export function getPreferredUnit(unitType, inputUnits) {
 }
 
 // Evaluate and return a formatted result using MathJS
-export function formattedEvaluate(text, preferredUnit = '') {
+export function formattedEvaluate(text, preferredUnit = '', preferredPrecision=4) {
 	try {
-		const evaluatePrecision = 8;
-		const resultPrecision = 4;
+		const evaluatePrecision = 12;
+
 		// Remove dashes from units to ensure MathJS can parse them correctly
 		let cleanedText = text.replaceAll(invalidMJSUnitRegex, "");
 		let cleanedUnit = preferredUnit.replaceAll(invalidMJSUnitRegex, "");
@@ -98,32 +118,53 @@ export function formattedEvaluate(text, preferredUnit = '') {
 		//check to see if it's a single expression defining the variable
 		let singleExpression = cleanedText.split(" ").length === 1;
 		//if it's a single expression, check to see if the unit needs to be defined
-		if (cleanedUnit !== "" && singleExpression) {
+		if (cleanedUnit === "" && singleExpression) {
 			let expressionUnit = getExpressionUnit(text).join("/");
+			console.log(cleanedUnit, expressionUnit);
 			cleanedUnit = expressionUnit;
 		}
 
+		//get a list of all units defined in the string
+		let allUnits = cleanedText.matchAll(globalUnitsRegex)
+		let allUnitsArray = Array.from(allUnits, (unit => {
+			let rawText = unit[0];
+			let matchedText = unit[1]
+			return {
+				rawText: rawText,
+				matchedText: matchedText
+			}
+		}));
+		console.log(allUnitsArray)
 		//check for custom units to define
-		if (cleanedUnit) {
+		allUnitsArray.forEach(unit => {
+			let unitText = unit.matchedText
 			try {
 				// This will throw an error if the unit doesn't exist
-				math.unit(1, cleanedUnit);
+				math.unit(1, unitText);
 			} catch (e) {
 				console.log(e)
-				let newUnitName = preferredUnit ? preferredUnit : cleanedUnit;
-				// If the unit doesn't exist, create it as a dimensionless unit
-				console.log(`Creating new dimensionless unit: ${newUnitName}`);
-				//create plural/singular of new unit
-				let isPlural = cleanedUnit.toLowerCase()[cleanedUnit.length-1] === "s";
-				let cleanedAlias = isPlural ? cleanedUnit.slice(0, -1) : `${cleanedUnit}s`;
-				let newUnit = math.createUnit(cleanedUnit, { 
-					aliases: [cleanedAlias]
-				});
-				console.log(newUnit)
+				// Handle compound units (like k/beam)
+				const unitParts = unitText.split('/');
+				console.log(unitParts);
+				if (unitParts.length > 1) {
+					// test and create each part separately if needed
+					unitParts.forEach(part => {
+					try {
+						math.unit(1, part);
+					} catch (e) {
+						createCustomUnit(part);
+					}
+					});
+				} else {
+					// create a simple unit
+					createCustomUnit(unitText);
+				}
 			}
-		}
+		})
 
+		//prepare exponents to distribute to magnitude, not just unit. ie. 12ft ^ 2 becomes (12ft) ^ 2
 		let processedExponentText = cleanedText.replaceAll(exponentExpressionRegex, '($1$2) $3 $4');
+		//replace π with "pi" for mathjs support
 		let processedText = processedExponentText.replaceAll(/π/g, "pi");
 		console.log(processedText, cleanedText);
 		// Evaluate the expression using MathJS
@@ -137,7 +178,7 @@ export function formattedEvaluate(text, preferredUnit = '') {
 		if (isUnitless) {
 			console.log(`No units found in ${text} result`, formattedResult);
 			formattedResult = parseFloat(formattedResult);			// Prepare the object to be returned
-			let unitlessResultObject = prepareResult(formattedResult, resultPrecision, "");
+			let unitlessResultObject = prepareResult(formattedResult, preferredPrecision, "");
 			
 			console.log(unitlessResultObject);
 			return unitlessResultObject;
@@ -153,7 +194,7 @@ export function formattedEvaluate(text, preferredUnit = '') {
 		//if the unit is a user defined custom unit, don't worry about Unit conversions
 		if (unitType === "VALUELESS") {
 			// Prepare the object to be returned
-			let formattedValuelessObject = prepareResult(formattedResult, resultPrecision, "VALUELESS");
+			let formattedValuelessObject = prepareResult(formattedResult, preferredPrecision, "VALUELESS");
 		
 			console.log("Valueless Unit defined\n", formattedValuelessObject);
 			return formattedValuelessObject;
@@ -192,11 +233,11 @@ export function formattedEvaluate(text, preferredUnit = '') {
 			console.log(evaluateString);
 			rawResult = math.evaluate(evaluateString);
 			// reformat result after unit conversion
-			formattedResult = prepareResult(rawResult, resultPrecision)
+			formattedResult = prepareResult(rawResult, preferredPrecision)
 		}
 
 		// Prepare the object to be returned
-		let formattedResultObject = prepareResult(rawResult, resultPrecision);
+		let formattedResultObject = prepareResult(rawResult, preferredPrecision);
 
 		console.log(formattedResultObject);
 		return formattedResultObject;
@@ -264,19 +305,34 @@ export async function calculateTreeMJS(object) {
 
 //prepare a result object for MJS
 export function prepareResult(rawResult, precision=4, unitType) {
-	//format final result
-	let formattedResult = math.format(rawResult, {
-		notation: "fixed",
-		precision: precision
-	})
-
+    let preparedResult = rawResult;
+	console.log(rawResult, precision);
+	
+	if (typeof preparedResult === "string") {
+		//find the numbers in the result
+		let stringNumbers = preparedResult.match(startingNumberRegex);
+		//convert them from a string to a number
+		let parsedNumbers = parseFloat(stringNumbers);
+		//round them to the desired precision
+		let roundedNumbers = math.round(parsedNumbers, precision);
+		console.log(preparedResult, stringNumbers, parsedNumbers, roundedNumbers)
+		//update preparedResult
+		preparedResult = preparedResult.replace(stringNumbers, `${roundedNumbers}`);
+	} else {
+		//prepare the result to match desired precision
+		preparedResult = math.format(preparedResult, {
+			notation: "fixed",
+			precision: precision
+		});
+	}
+	console.log(preparedResult);
 	// Determine the final result unit type
 	let resultDimensionArray = rawResult?.dimensions;
 	let resultUnitType = resultDimensionArray ? getResultUnitType(resultDimensionArray) : "";
 	if (unitType) resultUnitType = unitType;
 
 	return {
-		formattedResult: formattedResult,
+		formattedResult: preparedResult,
 		rawResult: rawResult,
 		rawResultUnit: resultUnitType
 	}

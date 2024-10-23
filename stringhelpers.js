@@ -12,6 +12,8 @@ import {
 	logRegex,
 	naturalLogRegex,
 	unitParenthesisRegex,
+	wordRegex,
+	roundedRegex,
 } from './regex.js';
 
 //search block text to see if a ${variable} or [variable](((uuid))) is identified
@@ -246,23 +248,59 @@ export function calculateStringValueMJS(text) {
 	console.log("Begin calculateStringValueMJS", text);
 	let textToCalc = text;
 	let resultUnit = "";
-  
+
 	// Check for desired unit output
 	let splitText = text.split(" ");
 	let lastItem = splitText[splitText.length - 1];
-	let isConversion = lastItem.match(unitParenthesisRegex);
+	let resultModified = lastItem.match(unitParenthesisRegex);
+	//setup rounded and converted variables for later reference
+	let isRounded, isConverted;
+	console.log(resultModified);
+	//default rounded precision to 3 decimals
+	let decimalPrecision = 3;
   
 	// If a specific result unit is requested, extract it and remove from calculation text
-	if (isConversion) {
-	  resultUnit = isConversion[1];
-	  textToCalc = splitText.slice(0, -1).join(" ");
+	if (resultModified) {
+		let modifierText = resultModified[1];
+		//check if rounding is input
+		isRounded = modifierText.match(roundedRegex);
+		//if the result modifier starts with a letter, unit conversion is required
+		isConverted = wordRegex.test(modifierText);
+		console.log(resultModified, isRounded, modifierText, isConverted)
+		if (isRounded) {
+			//find the location of the :
+			let roundIndex = isRounded.index;
+			//convert items after to number
+			decimalPrecision = parseInt(modifierText.slice(roundIndex+1));
+			//if the user inputs unit conversion, establish it as the final unit
+			if (isConverted) resultUnit = modifierText.split(":")[0];
+			console.log(decimalPrecision, resultUnit)
+		} else if (isConverted) {
+			resultUnit = modifierText;
+		}
+		textToCalc = splitText.slice(0, -1).join(" ");
 	}
-  
+	console.log(decimalPrecision)
+
 	// Evaluate the expression using MathJS
-	const { formattedResult, rawResult, rawResultUnit } = formattedEvaluate(textToCalc, resultUnit);
+	const { formattedResult, rawResult, rawResultUnit } = formattedEvaluate(textToCalc, resultUnit, decimalPrecision);
 	
+	// If evaluation failed, return false
+	if (!formattedResult) return false;
+
+	// Extract the numeric value from the formatted result
+	// This regex matches the number at the start of the string
+	const numericMatch = formattedResult.match(startingNumberRegex);
+	console.log(numericMatch, formattedResult);
+	const resultNum = numericMatch ? parseFloat(numericMatch[0]) : NaN;
+
+	if (isNaN(resultNum)) {
+		console.error("Failed to parse numeric value from", formattedResult);
+		return false;
+	}
+
 	//if there's no conversion and there IS a rawResultUnit, update resultUnit to outputted result
-	if (!isConversion && rawResultUnit !== "") {
+	if (!isConverted && rawResultUnit !== "") {
 		resultUnit = getExpressionUnit(formattedResult).join("/");
 		console.log(resultUnit);
 		//add "-" to MOMENT results
@@ -271,11 +309,11 @@ export function calculateStringValueMJS(text) {
 			console.log("Moment found!: ", resultUnit);
 		}
 	}
-	console.log(formattedResult, rawResult, rawResultUnit, resultUnit);
+	console.log(formattedResult, rawResult, resultNum, rawResultUnit, resultUnit);
 
 	// Parse the result and return
 	return {
-	  resultNum: parseFloat(formattedResult),
+	  resultNum: resultNum,
 	  unit: resultUnit,
 	  unitType: rawResultUnit
 	};

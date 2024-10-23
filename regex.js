@@ -26,8 +26,10 @@ export const nameVariableRegex = /\${.*?}/g;
 export const startingNumberRegex = /^[\d\.]+/;
 //include "_" to check for unit canceler
 export const unitsRegex = /[a-zA-Z_%]+.*/;
+//globally extract units from a string
+export const globalUnitsRegex = /\b\d*\.?\d*([a-zA-Z]{1}[a-zA-Z/^\-0-9]+)\b/g;
 //check for conversion unit in ()
-export const unitParenthesisRegex = /^\(([a-zA-Z/0-9\-\^]+)\)$/;
+export const unitParenthesisRegex = /^\(([a-zA-Z/0-9\-\^:]+)\)$/;
 //find all brackets [ ] in a string
 export const bracketsRegex = /[\[\]]*/g;
 //find all parenthesis ( ) in a string
@@ -40,3 +42,5 @@ export const nonNumberRegex = /[a-zA-z/\^]/;
 export const invalidMJSUnitRegex = /(?<=\w)-(?=\w)/g;
 //recognize expressions followed by ^ to wrap in parenthesis to avoid Mathjs exponent confusion
 export const exponentExpressionRegex = /(\d+(?:\.\d+)?)([a-zA-Z0-9\-\^]+)\s(\^|\*\*)\s(\d+(?:\.\d+)?)/g;
+//check if the expression contains : followed by a digit to see if a result is to be rounded
+export const roundedRegex = /:\d+/;
