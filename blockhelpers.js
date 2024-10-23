@@ -274,7 +274,7 @@ export async function calcBlock(rawBlock) {
 
 //calculate block without variables using Mathjs
 export async function calcBlockMJS(rawBlock) {
-	console.log('begin calcBlockMJS');
+	console.log('begin calcBlockMJS', rawBlock);
 	let block = rawBlock;
 	//parse and prep info for calculation
 	let parsedBlock = await parseBlockInfo(block);

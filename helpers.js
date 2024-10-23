@@ -16,6 +16,7 @@ export function getExpressionUnit(expression) {
 	//get unit from expression
 	let unitIndex = expression.match(nonNumberRegex).index;
 	let rawUnit = expression.slice(unitIndex);
+	//split unit fractions into separate units: lb/ft into [lb, ft]
 	let expressionUnits = rawUnit.split("/");
 	console.log(rawUnit, expressionUnits);
 	return expressionUnits;
