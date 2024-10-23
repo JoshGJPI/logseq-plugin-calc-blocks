@@ -66,7 +66,7 @@ export async function calcVariableBlock(uuid) {
 	console.log(calculatedVariables);
 	
 	//remove any reexisting results in calc string
-	let parsedCalcContent = rawCalcContent.split("=")[0].trim();
+	let parsedCalcContent = rawCalcContent.split(" = ")[0].trim();
 	//setup running eval string to have variables replaced
 	let runningEvalString = parsedCalcContent;
 
@@ -193,7 +193,7 @@ export async function calcVariableBlockMJS(uuid) {
 	console.log(calculatedVariables);
 
 	// Remove any pre-existing results in calc string
-	let parsedCalcContent = rawCalcContent.split("=")[0].trim();
+	let parsedCalcContent = rawCalcContent.split(" = ")[0].trim();
 
 	// Replace variable info with number values for calculation
 	let runningEvalString = parsedCalcContent;

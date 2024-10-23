@@ -119,7 +119,8 @@ export function formattedEvaluate(text, preferredUnit = '', preferredPrecision=4
 		let singleExpression = cleanedText.split(" ").length === 1;
 		//if it's a single expression, check to see if the unit needs to be defined
 		if (cleanedUnit === "" && singleExpression) {
-			let expressionUnit = getExpressionUnit(text).join("/");
+			let rawexpressionUnit = getExpressionUnit(text)
+			let expressionUnit = rawexpressionUnit ? rawexpressionUnit.join("/") : "";
 			console.log(cleanedUnit, expressionUnit);
 			cleanedUnit = expressionUnit;
 		}

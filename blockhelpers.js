@@ -155,7 +155,7 @@ export function calculateBlockValue(block) {
 	let calcBlock = block;
 
 	//only get the content to be calculated (before the = sign)
-	let content = calcBlock.rawCalcContent.split('=')[0].trim();
+	let content = calcBlock.rawCalcContent.split(' = ')[0].trim();
 	//calculate the value of the block
 	let calcedString = calculateStringValue(content);
 
@@ -208,7 +208,7 @@ export function calculateBlockValueMJS(block) {
 	let calcBlock = block;
 
 	//only get the content to be calculated (before the = sign)
-	let content = calcBlock.rawCalcContent.split('=')[0].trim();
+	let content = calcBlock.rawCalcContent.split(' = ')[0].trim();
 
 
 	//calculate the value of the block
