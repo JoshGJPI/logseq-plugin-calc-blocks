@@ -94,7 +94,7 @@
 				  #+END_WARNING
 - ## Units
 	- ### Units are **ignored** in calculations from the `cBlock`, `cTree`, and `cDNotes` commands
-		- By default the last unit displayed in the equation will be displayed in the result. Units may be placed at the end of an equation in parenthesis "()" to define the desired output units
+		- By default the last unit displayed in the equation will be displayed in the result. Units may be placed in a *Result Modifier* at the end of an equation in parenthesis "()" to define the desired output units
 			- Typical Output 1 := 10ft + 15ft = 25ft
 			- Typical Output 2 := 20psf \* 10ft = 200ft
 			- Defined Units Output := 20psf \* 10ft (plf) = 200plf
@@ -106,7 +106,7 @@
 		- The resulting units will default to the units input
 			- Default example 1 := 15ft + 20ft = 35ft
 			- Default example 2 := 10plf * 20ft = 200lbs
-		- Unit conversions will default to preferred units (described below) and can be overridden with "()" at the end similar to that described above
+		- Unit conversions will default to preferred units (described below) and can be overridden with a *Result Modifier* wrapped in "()" at the end like that described above
 			- Conversion example 1 := 2ft + 6in = 2.5ft
 			- Conversion example 2 := 2ft + 6in (in) = 30in
 			- Conversion example 2 := 2ft + 6in (mm) = 762mm
@@ -131,3 +131,34 @@
 					- No. Cells := 10cells
 					- Cell Weight := 10k/cell
 				- Support for the plural and singular forms of the unit is added by default
+- ## Mathjs Functions
+	- The [[JavaScript]] library used to handle unit conversion also has several functions that can be used within this plugin. Below is a list of commonly used functions and their required syntax. A full list of functions is available [here](https://mathjs.org/docs/reference/functions.html), but some of them may not be compatible with Calc-Block
+	- `max( [ value1, value 2, etc... ] )` - returns the maximum value from the list of given values
+	- `min( [ value1, value 2, etc... ] )` - returns the minimum value from the list of given values
+	- `floor( value )` - returns a value rounded down to the nearest integer
+	- `ceil( value )` - returns a value rounded up to the nearest integer
+	- `round( value, decimals, result units )` - returns a value rounded to the desired number of decimal places. If units are included/considered in the given value, the desired `result units` must be specified in slot 3
+	- `sqrt( value )` - returns the square root of the value
+	- **Logical functions** can be used with the *ternary operator* (`[logical comparison] ? [result if true] : [result if false]`) to help add some logic to equations. These support greater than (>), or lesser than (<), equal (==), or nonequal (!=) comparisons
+		- `and( value1, value2)` - returns true if **BOTH** value1 and value 2 are true
+			- and test := and( 5 < 9, 7 > 1 ) ? 19 : 2
+		- `not( value1, value2)` - returns true if **BOTH** value1 and value2 are false
+			- not test := not( 12 < 9, 7 > 19 ) ? 2 : 14
+		- `or( value1, value2 )` - returns true if **EITHER** value1 and value2 are false (both may be true)
+			- or test := or( 1 < 4, 8 > 12 ) ? 4 : 71
+		- `xor( value1, value2 )` - returns true if **ONLY ONE** of value1 or value2 are true
+			- xor test := xor( 1 < 4, 8 > 12 ) ? 4 : 71
+		- These will support variables as well
+			- sample variable list
+				- variable1 := 4
+				- variable2 := 9
+				- variable3 := ${variable1} * 2
+				- variable4 := ${variable2} - ${variable1}
+				- variable5 := 9
+			- variable and := and( ${variable1} < ${variable4}, ${variable3} == ${variable5}  ) ? 100 : 250
+- ## Rounding
+	- Results may be manually rounded by placing the desired number of decimal places after a `:` in the *Result Modifier* at the end of the string. This can be done with or without a unit conversion. Examples:
+		- Converting & Rounding := 12.8743ft - 37.954in (in:2)
+			- converts result to inches and rounds to 2 decimal places
+		- Rounding Only := 12.8543in^2 / 2.352in (:1)
+			- rounds result to 1 decimal place
