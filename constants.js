@@ -41,7 +41,7 @@ export const UNIT_PREFERENCES = {
   DENSITY: ['pcf', 'kcf', 'pci', 'kci', 'N/mm^3', 'kN/m^3'],
   STIFFNESS: ['in^4'],
   HEXATIC: ['in^6'],
-  MOMENT: ['lbft', 'kipft', 'lbin', 'kipin', 'Nm', 'kNm'],
+  MOMENT: ['lbft', 'kipft', 'kft', 'lbin', 'kipin', 'kin', 'Nm', 'kNm'],
   PRESSURE: ['psf', 'ksf', 'psi', 'ksi', 'Pa', 'kPa']
 };
 
@@ -52,7 +52,7 @@ export const UNIT_SYSTEMS = {
     FORCE: ['lb', 'lbs', 'k', 'kip', 'kips'],
     UNIFORM_LOAD: ['plf', 'klf', 'pli', 'kli'],
     PRESSURE: ['psf', 'ksf', 'psi', 'ksi'],
-    MOMENT: ['lbft', 'kipft', 'lbin', 'kipin'],
+    MOMENT: ['lbft', 'kipft', 'kft', 'lbin', 'kipin', 'kin'],
     SURFACE: ['sqin', 'sqft', 'sf', 'in^2', 'ft^2'],
     VOLUME: ['cuin', 'cuft', 'cf', 'in^3', 'ft^3'],
     DENSITY: ['pcf', 'kcf', 'pci', 'kci'],

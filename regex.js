@@ -27,7 +27,7 @@ export const startingNumberRegex = /^[\d\.]+/;
 //include "_" to check for unit canceler
 export const unitsRegex = /[a-zA-Z_%]+.*/;
 //globally extract units from a string
-export const globalUnitsRegex = /\b\d*\.?\d*([a-zA-Z]{1}[a-zA-Z/^\-0-9]+)\b/g;
+export const globalUnitsRegex = /\b\d\.?\d*([a-zA-Z]{1}[a-zA-Z/^\-0-9]+)\b/g;
 //check for conversion unit in ()
 export const unitParenthesisRegex = /^\(([a-zA-Z/0-9\-\^:]+)\)$/;
 //find all brackets [ ] in a string
